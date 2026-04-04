@@ -9,7 +9,7 @@
 | Area | Purpose |
 |------|--------|
 | **Terminal** | Full **xterm.js** session backed by a **pseudo-terminal** on your machine. Claude Code runs here with your normal shell environment (after `npx` resolution). |
-| **Sessions (personas)** | Switch between **named profiles** (for example “CTO” vs “General”). Each profile has its own **working directory**, **CLI arguments** (extra `--add-dir` roots, flags), **file-tree roots**, and **task file**—so one app can represent different projects or hats without retyping paths. |
+| **Sessions (personas)** | Switch between **named profiles** (for example one profile per repo or role). Each profile has its own **working directory**, **CLI arguments** (extra `--add-dir` roots, flags), **file-tree roots**, and **task file**—so one app can represent different projects without retyping paths. |
 | **Files** | Browse allowed directories (by default under **`$HOME`**) and **open files** in a **preview** pane (markdown and text). Useful for skimming specs or handovers next to the agent. |
 | **Tasks** | Watches the **tasks JSON** (`taskFile`); shows up to **10** rows plus **`+N more`** if the list is longer. Statuses **`blocked`** and **`parked`** (exact strings) and common **in-progress / completed / pending** values get distinct markers (see **How to use** → Tasks panel). |
 | **Status bar** | Periodically runs your **`~/.claude/status_line_command.sh`** and shows **context / rate-limit style** fields when the script output can be parsed (see limitations below). |
@@ -31,9 +31,10 @@
 
 ## Install from source
 
-From this folder (`dino-terminal`). If you use the parent monorepo, run `cd DinoHQ/dino-terminal` (or your clone path) first.
+Clone the repo and enter the app directory:
 
 ```bash
+git clone https://github.com/Dino-HQ/dino-terminal.git
 cd dino-terminal
 npm install
 ```
@@ -112,7 +113,7 @@ You pick a **persona** (tab) first; the file tree, tasks, and visible terminal a
 
 ### Daily workflow
 
-1. **Cmd+1** / **Cmd+2** jump to the **first** / **second** persona in JSON **array order** (reorder `personas.json` if you want different keys).
+1. **Cmd+1** / **Cmd+2** jump to the **first** / **second** persona in JSON **array order** when you have multiple entries (add more objects to `personas.json`); reorder the array to change which key selects which tab.
 2. Use the **file tree** to open specs or notes; they appear in the **center** preview.
 3. Interact with **Claude Code** in the **right-hand terminal** like any other terminal.
 4. **Cmd+N** starts a **fresh PTY** for the **currently selected** persona only (same tab, new session). Use this after you change `cwd` / CLI args in `personas.json`, or if the session feels stuck.
@@ -169,9 +170,14 @@ On first launch the app creates `~/.dino-terminal/` and seeds **`personas.json`*
 
 - Edit **`cwd`**, **`taskFile`**, and **`browseRoots`** to match your machine. **`cwd` must be an existing directory** on disk; otherwise the terminal shows a clear error instead of starting the session (see **How to use** → Working directory errors).
 - You may use **`$HOME`** or **`${HOME}`** in path strings; they are expanded when the app loads.
-- Default layout assumes the repo lives at **`~/Claude-Cowork/DinoHQ/`**. If yours differs, change those paths.
+- The **bundled template** ([`personas.json`](personas.json) in this repo) uses **`$HOME`** as `cwd` and a single **Home** browse root so it is safe to share; customize it for your projects (extra personas, `--add-dir`, different `taskFile`, etc.).
 
 Open the config from the app: **Cmd+,** (comma).
+
+### Privacy and open source
+
+- This repo does **not** contain secrets; do not commit API keys or private paths you care about—use **`~/.dino-terminal/personas.json`** locally (see [SECURITY.md](SECURITY.md)).
+- The app reads files only within the **Tauri FS scope** (by default under `$HOME`); see **Security & trust** below.
 
 ### File tree & document preview
 
