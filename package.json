@@ -2,6 +2,11 @@
   "name": "dino-terminal",
   "private": true,
   "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dino-HQ/dino-terminal.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
