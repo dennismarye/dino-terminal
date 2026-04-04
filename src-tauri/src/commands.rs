@@ -1,0 +1,183 @@
+use std::path::{Path, PathBuf};
+
+use serde::Serialize;
+use tauri::State;
+
+use crate::personas;
+use crate::pty_manager::PtySession;
+use crate::status;
+use crate::AppState;
+
+fn ensure_cwd_is_dir(cwd: &Path) -> Result<(), String> {
+    match std::fs::metadata(cwd) {
+        Ok(m) if m.is_dir() => Ok(()),
+        Ok(_) => Err(format!(
+            "working directory is not a directory: {}",
+            cwd.display()
+        )),
+        Err(e) => Err(format!(
+            "working directory does not exist or is not accessible ({}): {}",
+            cwd.display(),
+            e
+        )),
+    }
+}
+
+#[derive(Serialize)]
+pub struct NpxStatus {
+    pub ok: bool,
+    pub path: Option<String>,
+}
+
+#[tauri::command]
+pub fn get_npx_status(state: State<'_, AppState>) -> NpxStatus {
+    match state.npx_path.lock() {
+        Ok(p) => NpxStatus {
+            ok: p.is_some(),
+            path: p.as_ref().map(|x| x.to_string_lossy().to_string()),
+        },
+        Err(_) => NpxStatus {
+            ok: false,
+            path: None,
+        },
+    }
+}
+
+#[tauri::command]
+pub fn spawn_session(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    cwd: String,
+    cmd: String,
+    cmd_args: Vec<String>,
+    args: Vec<String>,
+) -> Result<String, String> {
+    if cmd != "npx" {
+        log::warn!("persona.cmd is {cmd}, expected npx — using resolved npx path anyway");
+    }
+    let npx: PathBuf = {
+        let guard = state
+            .npx_path
+            .lock()
+            .map_err(|_| "state lock poisoned".to_string())?;
+        guard.clone().ok_or_else(|| {
+            "npx not found — install Node.js 22+".to_string()
+        })?
+    };
+    let cwd_path = PathBuf::from(&cwd);
+    ensure_cwd_is_dir(&cwd_path)?;
+    let session_id = uuid::Uuid::new_v4().to_string();
+    let session = PtySession::spawn(
+        &app,
+        session_id.clone(),
+        &npx,
+        &cwd_path,
+        &cmd_args,
+        &args,
+    )?;
+    let mut mgr = state
+        .sessions
+        .lock()
+        .map_err(|_| "sessions lock poisoned".to_string())?;
+    mgr.insert(session_id.clone(), session);
+    Ok(session_id)
+}
+
+#[tauri::command]
+pub fn write_to_pty(state: State<'_, AppState>, session_id: String, data: Vec<u8>) -> Result<(), String> {
+    let mgr = state
+        .sessions
+        .lock()
+        .map_err(|_| "sessions lock poisoned".to_string())?;
+    let s = mgr
+        .get(&session_id)
+        .ok_or_else(|| "unknown session".to_string())?;
+    s.write_bytes(&data)
+}
+
+#[tauri::command]
+pub fn resize_pty(
+    state: State<'_, AppState>,
+    session_id: String,
+    cols: u16,
+    rows: u16,
+) -> Result<(), String> {
+    let mgr = state
+        .sessions
+        .lock()
+        .map_err(|_| "sessions lock poisoned".to_string())?;
+    let s = mgr
+        .get(&session_id)
+        .ok_or_else(|| "unknown session".to_string())?;
+    s.resize(cols, rows)
+}
+
+#[tauri::command]
+pub fn kill_session(state: State<'_, AppState>, session_id: String) -> Result<(), String> {
+    let mut mgr = state
+        .sessions
+        .lock()
+        .map_err(|_| "sessions lock poisoned".to_string())?;
+    let s = mgr
+        .remove(&session_id)
+        .ok_or_else(|| "unknown session".to_string())?;
+    s.kill_graceful()
+}
+
+#[tauri::command]
+pub fn get_personas() -> Vec<personas::Persona> {
+    personas::load_personas_from_disk()
+}
+
+#[tauri::command]
+pub fn read_task_file(path: String) -> Result<Option<String>, String> {
+    let p = PathBuf::from(&path);
+    if !p.is_absolute() {
+        return Err("task file path must be absolute".to_string());
+    }
+    let home = dirs::home_dir().ok_or_else(|| "no home dir".to_string())?;
+    let h = home.to_string_lossy();
+    let ps = p.to_string_lossy();
+    if !ps.starts_with(h.as_ref()) {
+        return Err("task file must live under home directory".to_string());
+    }
+    match std::fs::read_to_string(&p) {
+        Ok(s) => Ok(Some(s)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+pub fn get_status_line() -> Option<status::StatusUpdate> {
+    status::poll_status_line_script()
+}
+
+#[tauri::command]
+pub fn get_personas_config_path() -> Result<String, String> {
+    personas::personas_config_path()
+        .map(|p| p.to_string_lossy().to_string())
+        .ok_or_else(|| "no home dir".to_string())
+}
+
+#[cfg(test)]
+mod cwd_tests {
+    use super::ensure_cwd_is_dir;
+    use std::path::PathBuf;
+
+    #[test]
+    fn ensure_cwd_rejects_missing_path() {
+        let p = PathBuf::from("/nonexistent/dino-terminal-cwd-test-9f2a1c");
+        let e = ensure_cwd_is_dir(&p).expect_err("expected err");
+        assert!(
+            e.contains("does not exist") || e.contains("not accessible"),
+            "{e}"
+        );
+    }
+
+    #[test]
+    fn ensure_cwd_accepts_temp_dir() {
+        let tmp = std::env::temp_dir();
+        ensure_cwd_is_dir(&tmp).expect("temp_dir should be a directory");
+    }
+}

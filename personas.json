@@ -1,0 +1,38 @@
+[
+  {
+    "id": "cto",
+    "name": "CTO",
+    "cwd": "$HOME/Claude-Cowork/DinoHQ/project-dino",
+    "cmd": "npx",
+    "cmdArgs": ["@anthropic-ai/claude-code@latest"],
+    "args": ["--add-dir", "../nimbalyst-local", "--add-dir", ".."],
+    "taskFile": "$HOME/Claude-Cowork/DinoHQ/project-dino/.claude/tasks.json",
+    "color": "#FF6B35",
+    "browseRoots": [
+      {
+        "label": "nimbalyst-local",
+        "path": "$HOME/Claude-Cowork/DinoHQ/nimbalyst-local"
+      },
+      {
+        "label": "project-dino",
+        "path": "$HOME/Claude-Cowork/DinoHQ/project-dino"
+      }
+    ]
+  },
+  {
+    "id": "general",
+    "name": "General",
+    "cwd": "$HOME/Claude-Cowork/DinoHQ/project-dino",
+    "cmd": "npx",
+    "cmdArgs": ["@anthropic-ai/claude-code@latest"],
+    "args": [],
+    "taskFile": "$HOME/Claude-Cowork/DinoHQ/project-dino/.claude/tasks.json",
+    "color": "#95A5A6",
+    "browseRoots": [
+      {
+        "label": "project-dino",
+        "path": "$HOME/Claude-Cowork/DinoHQ/project-dino"
+      }
+    ]
+  }
+]

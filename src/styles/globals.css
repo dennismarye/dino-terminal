@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #1e1e2e;
+  --bg-secondary: #181825;
+  --bg-surface: #313244;
+  --bg-hover: #45475a;
+  --text-primary: #cdd6f4;
+  --text-secondary: #a6adc8;
+  --text-dim: #6c7086;
+  --accent-cto: #ff6b35;
+  --accent-general: #95a5a6;
+  --accent-green: #a6e3a1;
+  --accent-yellow: #f9e2af;
+  --accent-red: #f38ba8;
+  --accent-blue: #89b4fa;
+  --border: #313244;
+  --border-active: #ff6b35;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+[data-tauri-drag-region] {
+  app-region: drag;
+}
+
+.prose-markdown h1,
+.prose-markdown h2,
+.prose-markdown h3 {
+  margin: 1rem 0 0.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.prose-markdown h1 {
+  font-size: 1.25rem;
+}
+
+.prose-markdown h2 {
+  font-size: 1.1rem;
+}
+
+.prose-markdown h3 {
+  font-size: 1rem;
+}
+
+.prose-markdown p {
+  margin: 0.5rem 0;
+}
+
+.prose-markdown ul,
+.prose-markdown ol {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+
+.prose-markdown a {
+  color: #89b4fa;
+  text-decoration: underline;
+}
+
+.prose-markdown blockquote {
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--border);
+  color: var(--text-secondary);
+}
