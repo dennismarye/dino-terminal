@@ -93,6 +93,8 @@ The app uses **Tauri’s built-in updater** (signature-verified downloads over *
 
 **Notarization:** Apple notarization is separate from updater signing; Gatekeeper messaging on first open may still apply.
 
+**CI troubleshooting:** If the Release workflow fails after bundling with `Invalid symbol 37` (or “failed to decode base64 secret key”), the **`TAURI_SIGNING_PRIVATE_KEY`** secret contains invalid characters—often a trailing **`%`** copied from a shell prompt. Update the secret to the raw key only, then re-run the workflow. Until a run completes successfully, **`/releases/latest/download/latest.json`** returns “Not Found” because no release assets are uploaded.
+
 ### Install the production app on your Mac (after `tauri build`)
 
 1. **Build** (from `dino-terminal`): `npm install` once, then `npm run tauri build`. Wait until Cargo finishes; the frontend is built automatically via `beforeBuildCommand`.
