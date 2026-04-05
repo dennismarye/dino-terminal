@@ -1,5 +1,5 @@
 import type { DirEntry } from "@tauri-apps/plugin-fs";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import type { UseFileTreeResult } from "../hooks/useFileTree";
 import type { BrowseRoot } from "../lib/personas";
 
@@ -159,16 +159,48 @@ function RootNode({ root, tree, onFileSelect }: RootNodeProps) {
 }
 
 export function FileTree({ roots, tree, onFileSelect }: FileTreeProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const focusAdjacentButton = useCallback((dir: 1 | -1) => {
+    const root = wrapRef.current;
+    if (!root) {
+      return;
+    }
+    const buttons = [...root.querySelectorAll("button")];
+    if (buttons.length === 0) {
+      return;
+    }
+    const ae = document.activeElement;
+    let i = buttons.indexOf(ae as HTMLButtonElement);
+    if (i < 0) {
+      i = 0;
+    } else {
+      i = Math.min(buttons.length - 1, Math.max(0, i + dir));
+    }
+    buttons[i]?.focus();
+  }, []);
+
   if (!roots.length) {
     return null;
   }
 
   return (
-    <div className="mb-2 min-h-0 shrink-0">
-      <h2 className="mb-1 text-[10px] font-medium uppercase tracking-[0.1em] text-[var(--text-dim)]">
-        Files
-      </h2>
-      <div className="max-h-[220px] space-y-0.5 overflow-y-auto pr-1">
+    <div
+      ref={wrapRef}
+      tabIndex={0}
+      className="min-h-0 flex-1 overflow-y-auto pr-1 outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
+      onKeyDown={(e) => {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          focusAdjacentButton(1);
+        }
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          focusAdjacentButton(-1);
+        }
+      }}
+    >
+      <div className="space-y-0.5" role="tree" aria-label="Files">
         {roots.map((r) => (
           <RootNode
             key={r.path}

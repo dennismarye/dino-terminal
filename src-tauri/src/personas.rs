@@ -42,12 +42,12 @@ fn expand_path_tokens(s: &str) -> String {
         return s.to_string();
     };
     let h = home.to_string_lossy();
-    s.replace("${HOME}", h.as_ref()).replace("$HOME", h.as_ref())
+    s.replace("${HOME}", h.as_ref())
+        .replace("$HOME", h.as_ref())
 }
 
 fn expand_personas(list: Vec<Persona>) -> Vec<Persona> {
-    list
-        .into_iter()
+    list.into_iter()
         .map(|mut p| {
             p.cwd = expand_path_tokens(&p.cwd);
             p.task_file = expand_path_tokens(&p.task_file);
@@ -116,7 +116,11 @@ pub fn load_personas_from_disk() -> Vec<Persona> {
 }
 
 pub fn personas_config_path() -> Option<std::path::PathBuf> {
-    Some(dirs::home_dir()?.join(".dino-terminal").join("personas.json"))
+    Some(
+        dirs::home_dir()?
+            .join(".dino-terminal")
+            .join("personas.json"),
+    )
 }
 
 #[cfg(test)]

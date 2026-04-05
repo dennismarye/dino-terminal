@@ -39,8 +39,7 @@ fn pct_from_json_value(v: &Value) -> Option<u8> {
 }
 
 fn obj_get_pct<'a>(o: &'a serde_json::Map<String, Value>, keys: &[&str]) -> Option<u8> {
-    keys
-        .iter()
+    keys.iter()
         .find_map(|k| o.get(*k))
         .and_then(|v| pct_from_json_value(v))
 }
@@ -57,10 +56,11 @@ fn try_parse_status_json(text: &str) -> Option<StatusUpdate> {
     let model = o
         .get("model")
         .and_then(|v| v.as_str().map(String::from))
-        .or_else(|| o.get("modelName").and_then(|v| v.as_str().map(String::from)));
-    let branch = o
-        .get("branch")
-        .and_then(|v| v.as_str().map(String::from));
+        .or_else(|| {
+            o.get("modelName")
+                .and_then(|v| v.as_str().map(String::from))
+        });
+    let branch = o.get("branch").and_then(|v| v.as_str().map(String::from));
 
     if context_pct.is_none()
         && rate_5h_pct.is_none()
@@ -125,9 +125,8 @@ fn try_parse_plaintext_status(text: &str) -> Option<StatusUpdate> {
     static RE_5H: OnceLock<Regex> = OnceLock::new();
     static RE_7D: OnceLock<Regex> = OnceLock::new();
 
-    let re_ctx = RE_CTX.get_or_init(|| {
-        Regex::new(r"Ctx:\s*(?:N/A|([\d.]+)\s*%)").expect("ctx regex")
-    });
+    let re_ctx =
+        RE_CTX.get_or_init(|| Regex::new(r"Ctx:\s*(?:N/A|([\d.]+)\s*%)").expect("ctx regex"));
     let re_5h = RE_5H.get_or_init(|| Regex::new(r"5h:\s*(\d+)\s*%").expect("5h regex"));
     let re_7d = RE_7D.get_or_init(|| Regex::new(r"7d:\s*(\d+)\s*%").expect("7d regex"));
 

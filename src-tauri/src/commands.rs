@@ -60,21 +60,14 @@ pub fn spawn_session(
             .npx_path
             .lock()
             .map_err(|_| "state lock poisoned".to_string())?;
-        guard.clone().ok_or_else(|| {
-            "npx not found — install Node.js 22+".to_string()
-        })?
+        guard
+            .clone()
+            .ok_or_else(|| "npx not found — install Node.js 22+".to_string())?
     };
     let cwd_path = PathBuf::from(&cwd);
     ensure_cwd_is_dir(&cwd_path)?;
     let session_id = uuid::Uuid::new_v4().to_string();
-    let session = PtySession::spawn(
-        &app,
-        session_id.clone(),
-        &npx,
-        &cwd_path,
-        &cmd_args,
-        &args,
-    )?;
+    let session = PtySession::spawn(&app, session_id.clone(), &npx, &cwd_path, &cmd_args, &args)?;
     let mut mgr = state
         .sessions
         .lock()
@@ -84,7 +77,11 @@ pub fn spawn_session(
 }
 
 #[tauri::command]
-pub fn write_to_pty(state: State<'_, AppState>, session_id: String, data: Vec<u8>) -> Result<(), String> {
+pub fn write_to_pty(
+    state: State<'_, AppState>,
+    session_id: String,
+    data: Vec<u8>,
+) -> Result<(), String> {
     let mgr = state
         .sessions
         .lock()
@@ -158,6 +155,49 @@ pub fn get_personas_config_path() -> Result<String, String> {
     personas::personas_config_path()
         .map(|p| p.to_string_lossy().to_string())
         .ok_or_else(|| "no home dir".to_string())
+}
+
+fn ensure_path_under_home(path: &Path) -> Result<(), String> {
+    if !path.is_absolute() {
+        return Err("path must be absolute".to_string());
+    }
+    let home = dirs::home_dir().ok_or_else(|| "no home dir".to_string())?;
+    let h = home.to_string_lossy();
+    let ps = path.to_string_lossy();
+    if !ps.starts_with(h.as_ref()) {
+        return Err("path must live under home directory".to_string());
+    }
+    Ok(())
+}
+
+/// Reveal a file or folder in Finder (macOS) or file manager. Path must be absolute and under $HOME.
+#[tauri::command]
+pub fn reveal_in_finder(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    ensure_path_under_home(&p)?;
+    if !p.exists() {
+        return Err(format!("path does not exist: {}", p.display()));
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let st = Command::new("open")
+            .args(["-R", &path])
+            .status()
+            .map_err(|e| e.to_string())?;
+        if st.success() {
+            Ok(())
+        } else {
+            Err("open -R failed".to_string())
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = path;
+        Err("reveal_in_finder is only supported on macOS".to_string())
+    }
 }
 
 #[cfg(test)]

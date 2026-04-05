@@ -6,7 +6,9 @@
   "permissions": [
     "core:default",
     "opener:default",
+    "process:default",
     "window-state:default",
+    "updater:default",
     "fs:allow-read-dir",
     "fs:allow-read-file",
     "fs:allow-read-text-file",

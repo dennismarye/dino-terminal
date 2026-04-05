@@ -64,6 +64,7 @@ Installable artifacts (after `npm run tauri build`):
 |--------|------------------|
 | `.app` bundle | `src-tauri/target/release/bundle/macos/` |
 | `.dmg` installer | `src-tauri/target/release/bundle/dmg/` |
+| Updater `.app.tar.gz` + `.sig` | `src-tauri/target/release/bundle/macos/` (when signing env is set; see **Updates for maintainers**) |
 
 Exact names depend on `productName` in `src-tauri/tauri.conf.json` and `bundle.targets`.
 
@@ -74,6 +75,23 @@ open "src-tauri/target/release/bundle/macos/Dino Terminal.app"
 ```
 
 **Gatekeeper:** If macOS blocks an unsigned build, right-click the app → **Open** → confirm once.
+
+### Updates (for maintainers)
+
+The app uses **Tauri’s built-in updater** (signature-verified downloads over **HTTPS**). In the UI, users get **Check for updates…** in the command palette (**Cmd+Shift+P**) and an optional **bottom-right banner** after a background check.
+
+**Signing (required for updater bundles and CI):**
+
+1. Generate a keypair: `npm run tauri signer generate -- -w ~/.tauri/dino-terminal.key` (store the private key in a password manager or GitHub Actions **Secrets** only; never commit it).
+2. Put the **public** key string into `src-tauri/tauri.conf.json` under `plugins.updater.pubkey` (must match the private key used to sign). The value is the full minisign public key text (as in the generated `.pub` file), not a filesystem path.
+3. When building release artifacts, set **`TAURI_SIGNING_PRIVATE_KEY`** (inline PEM or path) and, if applicable, **`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`**. **`.env` is not read** for these variables—use the shell or CI secrets.
+4. Keep **`version`** aligned across `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, and `package.json` when you cut a release.
+
+**Endpoints:** `plugins.updater.endpoints` includes a stable GitHub URL for `latest.json` on each release. The release workflow (`.github/workflows/release.yml`) builds `latest.json` via `scripts/build-latest-json.sh` and uploads it next to the `.app.tar.gz` and `.sig` for the tagged release.
+
+**Repository secrets for GitHub Actions:** `TAURI_SIGNING_PRIVATE_KEY` (and optional password secret) must match the **`pubkey`** committed in `tauri.conf.json`, or installs will fail signature verification.
+
+**Notarization:** Apple notarization is separate from updater signing; Gatekeeper messaging on first open may still apply.
 
 ### Install the production app on your Mac (after `tauri build`)
 
@@ -96,7 +114,7 @@ This section is the **operator’s guide**: how the window is laid out, what to 
 
 | Column | What it is |
 |--------|------------|
-| **Left (sidebar)** | **Files** (tree from the active persona’s `browseRoots`), **Sessions** (persona tabs), **Tasks** (from that persona’s `taskFile`). Toggle with **Cmd+B**. |
+| **Left (sidebar)** | **Files** (tree from the active persona’s `browseRoots`), **Sessions** (persona tabs), **Tasks** (from that persona’s `taskFile`). Drag the **horizontal bars** between sections to resize; sizes persist. Toggle the whole sidebar with **Cmd+B**. |
 | **Center** | **Document preview** for a selected file (markdown renders; plain text and UTF-8; binary files show an error). **Cmd+W** closes the preview when a file is open. |
 | **Right** | **Terminal** for the **active** persona only (other personas’ terminals stay mounted but hidden so state is preserved when you switch tabs). |
 
@@ -157,7 +175,7 @@ Before starting a session, the app checks that **`cwd` exists and is a directory
 | Terminal shows other **spawn / IPC** errors | Read the red text; often bad `cmdArgs` / `args` or network/auth for Claude Code. |
 | **Files** empty or “unreadable” | `browseRoots` paths exist; for hidden dirs, scope must allow dot segments (default `$HOME` patterns do). Paths **outside** `$HOME` need an extra `fs:scope` entry and rebuild. |
 | **Tasks** always “No tasks” | **`taskFile`** absolute, under home, file exists; JSON valid; wait ~5s. |
-| **Preview** “Cannot preview” / binary | File is not UTF-8 text (or has null bytes in the sample). |
+| **Preview** “Cannot preview” / binary | File is not UTF-8 text (or has null bytes in the sample). Use **Copy path** / **Reveal** in the preview header when a file is open (**Reveal** uses Finder on macOS; path must be under `$HOME`). |
 | **Status bar** all dashes | `~/.claude/status_line_command.sh` missing, failing, or only meaningful when Claude pipes JSON on stdin (see Status bar). |
 | **Personas** didn’t update after edit | Wait ~12s or switch away and back; or restart. Then **Cmd+N** if `cwd` changed. |
 | **Stale terminal** after rare IPC glitch | **Cmd+N** or quit the app (closing the window kills PTYs). |
@@ -203,16 +221,21 @@ If you need roots **outside** `$HOME` (e.g. `/Volumes/Projects/...`), add anothe
 
 | Shortcut | Action |
 |----------|--------|
+| **Cmd+Shift+P** | **Command palette** (toggle). Not opened while focus is inside the terminal, so `P` still types there. |
+| **?** | **Keyboard shortcuts** help (when not typing in an input). |
 | **Cmd+1** / **Cmd+2** | Switch to the **first** / **second** persona in the **order they appear** in `personas.json` (after load). Reorder the array to change which tab each key selects. |
 | **Cmd+N** | **Restart the PTY** for the **currently active** persona (new session in that tab). |
 | **Cmd+B** | Toggle sidebar. |
-| **Cmd+W** | Close file preview when a file is open. |
+| **Cmd+W** | Close file preview when a file is open; otherwise closes the PTY session. |
 | **Cmd+,** | Open `~/.dino-terminal/personas.json` via the system opener. |
+| **Cmd+F** | **Find** in terminal (when the terminal is focused). **Cmd+click** an **http(s)** link in the terminal to open it in your default browser. |
+| **Cmd+=** / **Cmd+-** / **Cmd+0** | **Larger** / **smaller** / **reset** terminal font size. |
 
 Personas are **re-polled** periodically while the app runs. If you change `cwd` or roots for an active session, use **Cmd+N** on that tab so the terminal matches the updated config.
 
 ### Terminal (`npx` / Claude Code)
 
+- **Renderer:** The embedded terminal uses the **canvas** renderer by default to avoid long-session **glyph glitches** sometimes seen with the WebGL addon in desktop webviews. To opt into WebGL (experimental), set `localStorage` key **`dino-terminal-terminal-webgl`** to **`1`** before starting a session, or build with **`VITE_TERMINAL_WEBGL=true`**.
 - The native app uses a **minimal PATH** from the GUI shell; resolution prefers Homebrew paths and your **login shell** so `npx` matches Terminal.app.
 - Each PTY session gets an explicit **`PATH`** that **starts with the directory containing the resolved `npx`** (and common Node prefixes), so the `npx` script’s `#!/usr/bin/env node` can find **`node`**—without this, macOS builds often showed `env: node: No such file or directory` even when `npx` was found.
 - **`npx` availability is re-checked** on a timer and when the window becomes visible, so installing Node while the app is open can clear the “npx not found” overlay without a full restart.

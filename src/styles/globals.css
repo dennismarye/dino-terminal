@@ -36,6 +36,16 @@ body,
   app-region: drag;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .prose-markdown h1,
 .prose-markdown h2,
 .prose-markdown h3 {

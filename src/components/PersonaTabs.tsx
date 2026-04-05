@@ -8,10 +8,7 @@ interface PersonaTabsProps {
 
 export function PersonaTabs({ personas, activeId, onSelect }: PersonaTabsProps) {
   return (
-    <nav className="flex flex-col gap-1" aria-label="Sessions">
-      <h2 className="mb-1 text-[10px] font-medium uppercase tracking-[0.1em] text-[var(--text-dim)]">
-        Sessions
-      </h2>
+    <nav className="flex min-h-0 flex-col gap-1 overflow-y-auto" aria-label="Sessions">
       {personas.map((p) => {
         const active = p.id === activeId;
         return (

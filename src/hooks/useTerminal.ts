@@ -1,10 +1,21 @@
+import { SearchAddon } from "@xterm/addon-search";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import { listen } from "@tauri-apps/api/event";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useRef, useState } from "react";
 import type { Persona } from "../lib/personas";
+import { isSafeHttpUrl } from "../lib/safe-http-url";
+import {
+  DEFAULT_FONT,
+  MAX_FONT,
+  MIN_FONT,
+  loadFontSize,
+  saveFontSize,
+  shouldUseWebGl,
+} from "../lib/storage-keys";
 import {
   killSession,
   resizePty,
@@ -58,15 +69,37 @@ function bytesFromB64(b64: string): Uint8Array {
   return out;
 }
 
+function emitSpawnError(message: string): void {
+  globalThis.dispatchEvent(
+    new CustomEvent("dino-terminal-spawn-error", { detail: message }),
+  );
+}
+
+export interface TerminalFindControl {
+  findNext: (query: string) => boolean;
+  findPrevious: (query: string) => boolean;
+  clearDecorations: () => void;
+}
+
+export interface UseTerminalOptions {
+  findControlRef: React.MutableRefObject<TerminalFindControl | null>;
+  onToggleFindBar?: () => void;
+}
+
 export function useTerminal(
   containerRef: React.RefObject<HTMLDivElement | null>,
   persona: Persona | null,
   isActive: boolean,
   npxOk: boolean,
   bootKey: number,
+  options: UseTerminalOptions,
 ): void {
+  const { findControlRef, onToggleFindBar } = options;
+  const onToggleFindRef = useRef(onToggleFindBar);
+  onToggleFindRef.current = onToggleFindBar;
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
+  const searchRef = useRef<SearchAddon | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const smokePhaseRef = useRef(false);
   const endedRef = useRef(false);
@@ -84,31 +117,57 @@ export function useTerminal(
     if (!el || termRef.current) {
       return;
     }
+    const initialSize = loadFontSize();
     const term = new Terminal({
       cursorBlink: true,
       fontFamily: "JetBrains Mono, Menlo, monospace",
-      fontSize: 13,
+      fontSize: initialSize,
       theme: { ...baseTheme, cursor: persona?.color ?? baseTheme.cursor },
       scrollback: 1000,
     });
     const fit = new FitAddon();
+    const search = new SearchAddon();
     term.loadAddon(fit);
-    term.loadAddon(new WebLinksAddon());
+    term.loadAddon(
+      new WebLinksAddon((e, uri) => {
+        if (!e.metaKey) {
+          return;
+        }
+        e.preventDefault();
+        if (!isSafeHttpUrl(uri)) {
+          return;
+        }
+        void openUrl(uri).catch(() => {
+          /* ignore opener failures */
+        });
+      }),
+    );
+    term.loadAddon(search);
     term.open(el);
-    try {
-      term.loadAddon(new WebglAddon());
-    } catch {
-      /* canvas fallback */
+    if (shouldUseWebGl()) {
+      try {
+        term.loadAddon(new WebglAddon());
+      } catch {
+        /* canvas fallback */
+      }
     }
     fit.fit();
     termRef.current = term;
     fitRef.current = fit;
+    searchRef.current = search;
+    findControlRef.current = {
+      findNext: (query: string) => search.findNext(query, {}),
+      findPrevious: (query: string) => search.findPrevious(query, {}),
+      clearDecorations: () => search.clearDecorations(),
+    };
     return () => {
+      findControlRef.current = null;
+      searchRef.current = null;
       term.dispose();
       termRef.current = null;
       fitRef.current = null;
     };
-  }, [containerRef, persona?.color]);
+  }, [containerRef, persona?.color, findControlRef]);
 
   useEffect(() => {
     const term = termRef.current;
@@ -149,6 +208,23 @@ export function useTerminal(
     const unsubs: Array<() => void> = [];
     let keyHandler: ((e: KeyboardEvent) => void) | null = null;
 
+    const applyFontAndFit = (next: number) => {
+      const t = termRef.current;
+      const f = fitRef.current;
+      if (!t || !f) {
+        return;
+      }
+      const clamped = Math.min(MAX_FONT, Math.max(MIN_FONT, next));
+      t.options.fontSize = clamped;
+      saveFontSize(clamped);
+      f.fit();
+      const dims = f.proposeDimensions();
+      const sid = sessionIdRef.current;
+      if (dims && sid) {
+        void resizePty(sid, dims.cols, dims.rows);
+      }
+    };
+
     const spawnFull = async () => {
       const cur = personaRef.current;
       if (!cur) {
@@ -183,6 +259,7 @@ export function useTerminal(
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
+        emitSpawnError(msg);
         term.writeln(`\r\n\x1b[31m${msg}\x1b[0m\r\n`);
       }
     };
@@ -209,6 +286,7 @@ export function useTerminal(
           smokePhaseRef.current = false;
           void spawnFull().catch((e) => {
             const msg = e instanceof Error ? e.message : String(e);
+            emitSpawnError(msg);
             term.writeln(`\r\n\x1b[31m${msg}\x1b[0m\r\n`);
           });
           return;
@@ -244,7 +322,32 @@ export function useTerminal(
         if (!isActiveRef.current) {
           return;
         }
-        if (e.metaKey && (e.key === "w" || e.key === "W")) {
+        if (!e.metaKey) {
+          return;
+        }
+        if (e.key === "f" || e.key === "F") {
+          e.preventDefault();
+          onToggleFindRef.current?.();
+          return;
+        }
+        if (e.key === "=" || e.key === "+") {
+          e.preventDefault();
+          const cur = term.options.fontSize ?? DEFAULT_FONT;
+          applyFontAndFit(cur + 1);
+          return;
+        }
+        if (e.key === "-" || e.key === "_") {
+          e.preventDefault();
+          const cur = term.options.fontSize ?? DEFAULT_FONT;
+          applyFontAndFit(cur - 1);
+          return;
+        }
+        if (e.key === "0") {
+          e.preventDefault();
+          applyFontAndFit(DEFAULT_FONT);
+          return;
+        }
+        if (e.key === "w" || e.key === "W") {
           e.preventDefault();
           const sid = sessionIdRef.current;
           if (sid) {
@@ -314,6 +417,7 @@ export function useTerminal(
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
+        emitSpawnError(msg);
         term.writeln(`\r\n\x1b[31m${msg}\x1b[0m\r\n`);
       } finally {
         startingRef.current = false;
@@ -328,6 +432,9 @@ export function useTerminal(
     if (!term || !fit || !el || !isActive) {
       return;
     }
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let raf = 0;
+
     const apply = () => {
       fit.fit();
       const dims = fit.proposeDimensions();
@@ -336,11 +443,38 @@ export function useTerminal(
         void resizePty(sid, dims.cols, dims.rows);
       }
     };
+
+    const scheduleApply = () => {
+      if (debounceTimer !== null) {
+        globalThis.clearTimeout(debounceTimer);
+      }
+      debounceTimer = globalThis.setTimeout(() => {
+        debounceTimer = null;
+        globalThis.cancelAnimationFrame(raf);
+        raf = globalThis.requestAnimationFrame(() => {
+          apply();
+        });
+      }, 90);
+    };
+
     const ro = new ResizeObserver(() => {
-      apply();
+      scheduleApply();
     });
     ro.observe(el);
     apply();
-    return () => ro.disconnect();
+
+    const onWinResize = () => {
+      scheduleApply();
+    };
+    globalThis.addEventListener("resize", onWinResize);
+
+    return () => {
+      ro.disconnect();
+      globalThis.removeEventListener("resize", onWinResize);
+      if (debounceTimer !== null) {
+        globalThis.clearTimeout(debounceTimer);
+      }
+      globalThis.cancelAnimationFrame(raf);
+    };
   }, [isActive, persona?.id, containerRef]);
 }

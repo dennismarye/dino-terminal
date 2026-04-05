@@ -76,3 +76,7 @@ export async function getStatusLine(): Promise<StatusLine | null> {
 export async function getPersonasConfigPath(): Promise<string> {
   return invoke<string>("get_personas_config_path");
 }
+
+export async function revealInFinder(path: string): Promise<void> {
+  await invoke("reveal_in_finder", { path });
+}

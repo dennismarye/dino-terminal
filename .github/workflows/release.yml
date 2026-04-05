@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Tauri (signed updater artifacts)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri build
+
+      - name: Assemble latest.json
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: bash scripts/build-latest-json.sh
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ github.ref_name }}"
+          REPO="${{ github.repository }}"
+          TGZ="$(ls src-tauri/target/release/bundle/macos/*.app.tar.gz | head -1)"
+          SIG="${TGZ}.sig"
+          DMG="$(find src-tauri/target/release/bundle/dmg -maxdepth 1 -name '*.dmg' 2>/dev/null | head -1 || true)"
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$TGZ" "$SIG" latest.json --clobber --repo "$REPO"
+            if [[ -n "$DMG" && -f "$DMG" ]]; then
+              gh release upload "$TAG" "$DMG" --clobber --repo "$REPO"
+            fi
+          else
+            if [[ -n "$DMG" && -f "$DMG" ]]; then
+              gh release create "$TAG" --repo "$REPO" --title "Dino Terminal ${TAG}" --generate-notes \
+                "$TGZ" "$SIG" latest.json "$DMG"
+            else
+              gh release create "$TAG" --repo "$REPO" --title "Dino Terminal ${TAG}" --generate-notes \
+                "$TGZ" "$SIG" latest.json
+            fi
+          fi

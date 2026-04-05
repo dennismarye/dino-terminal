@@ -65,22 +65,16 @@ impl PtySession {
         cmd.env("COLORTERM", "truecolor");
         cmd.env("PATH", crate::npx::path_env_for_npx_spawn(npx));
 
-        let child = pair
-            .slave
-            .spawn_command(cmd)
-            .map_err(|e| e.to_string())?;
+        let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
 
         let master = pair.master;
-        let mut reader = master
-            .try_clone_reader()
-            .map_err(|e| e.to_string())?;
+        let mut reader = master.try_clone_reader().map_err(|e| e.to_string())?;
         let writer = master.take_writer().map_err(|e| e.to_string())?;
 
         let master: Arc<Mutex<Box<dyn MasterPty + Send>>> = Arc::new(Mutex::new(master));
 
         let writer = Arc::new(Mutex::new(writer));
-        let child_wrapped: Arc<Mutex<Box<dyn Child + Send + Sync>>> =
-            Arc::new(Mutex::new(child));
+        let child_wrapped: Arc<Mutex<Box<dyn Child + Send + Sync>>> = Arc::new(Mutex::new(child));
 
         let app_clone = app.clone();
         let sid = session_id.clone();
