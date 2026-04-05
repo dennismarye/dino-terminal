@@ -93,7 +93,12 @@ The app uses **Tauri’s built-in updater** (signature-verified downloads over *
 
 **Notarization:** Apple notarization is separate from updater signing; Gatekeeper messaging on first open may still apply.
 
-**CI troubleshooting:** If the Release workflow fails after bundling with `Invalid symbol 37` (or “failed to decode base64 secret key”), the **`TAURI_SIGNING_PRIVATE_KEY`** secret contains invalid characters—often a trailing **`%`** copied from a shell prompt. Update the secret to the raw key only, then re-run the workflow. Until a run completes successfully, **`/releases/latest/download/latest.json`** returns “Not Found” because no release assets are uploaded.
+**CI troubleshooting:**
+
+- **`Invalid symbol 37` / failed to decode base64:** The **`TAURI_SIGNING_PRIVATE_KEY`** secret has junk characters (often a trailing **`%`** from the shell). Paste the key only, then re-run the workflow.
+- **`Wrong password for that key`:** The private key was created **with a password**. Set **`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`** in Actions secrets to that **exact** password (no extra spaces). If the key has **no** password, **remove** the password secret entirely so CI does not send a wrong password.
+
+Until a run completes successfully, **`/releases/latest/download/latest.json`** returns “Not Found” because no release assets are uploaded.
 
 ### Install the production app on your Mac (after `tauri build`)
 
