@@ -14,7 +14,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "tauri": "tauri",
-    "verify": "npm run build && npm test && cd src-tauri && cargo test"
+    "verify": "npm run build && npm test && cd src-tauri && cargo test",
+    "release:bump": "node scripts/bump-version.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

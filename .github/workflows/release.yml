@@ -15,6 +15,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify tag matches tauri.conf.json version
+        run: |
+          set -euo pipefail
+          TAG="${{ github.ref_name }}"
+          VER="$(node -e "console.log(JSON.parse(require('node:fs').readFileSync('src-tauri/tauri.conf.json','utf8')).version)")"
+          EXPECTED="v${VER}"
+          if [[ "${TAG}" != "${EXPECTED}" ]]; then
+            echo "::error::Tag '${TAG}' must match tauri.conf.json version '${VER}' (expected '${EXPECTED}')."
+            exit 1
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

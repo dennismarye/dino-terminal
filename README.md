@@ -89,6 +89,14 @@ The app uses **Tauri’s built-in updater** (signature-verified downloads over *
 3. When building release artifacts, set **`TAURI_SIGNING_PRIVATE_KEY`** (inline PEM or path) and, if applicable, **`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`**. **`.env` is not read** for these variables—use the shell or CI secrets.
 4. Keep **`version`** aligned across `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, and `package.json` when you cut a release.
 
+**Automated bump + tag (recommended):** In GitHub, run **Actions → Prepare release → Run workflow**, choose **patch** / **minor** / **major**. That workflow bumps all three version fields, commits to `main`, and pushes tag **`vX.Y.Z`**, which triggers **Release** (macOS build + `latest.json` upload).
+
+Because of a **GitHub Actions limitation**, a push performed with the default `GITHUB_TOKEN` does not trigger other workflows. Add a repository secret **`RELEASE_AUTOMATION_TOKEN`**: a fine-grained or classic PAT with **Contents: Read and write** on this repo. The Prepare release workflow refuses to run without it.
+
+Local bump (then push the commit and tag yourself): `npm run release:bump -- patch` (or `minor` / `major`). Optional dry run: `node scripts/bump-version.mjs patch --dry-run`.
+
+**Tag rule:** The Git tag must be **`v`** plus the exact semver in `tauri.conf.json` (for example tag **`v0.2.0`** for version **`0.2.0`**). The Release workflow fails early if they disagree, so `latest.json` cannot drift from the tag download URL.
+
 **Endpoints:** `plugins.updater.endpoints` includes a stable GitHub URL for `latest.json` on each release. The release workflow (`.github/workflows/release.yml`) builds `latest.json` via `scripts/build-latest-json.sh` and uploads it next to the `.app.tar.gz` and `.sig` for the tagged release.
 
 **Repository secrets for GitHub Actions:** `TAURI_SIGNING_PRIVATE_KEY` (and optional password secret) must match the **`pubkey`** committed in `tauri.conf.json`, or installs will fail signature verification.

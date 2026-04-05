@@ -1,0 +1,82 @@
+# Bump package.json + Cargo.toml + tauri.conf.json, commit to main, push tag vX.Y.Z.
+# The tag push triggers release.yml (build + latest.json upload).
+#
+# GitHub limitation: pushes made with the default GITHUB_TOKEN do not trigger other
+# workflows. This workflow requires repository secret RELEASE_AUTOMATION_TOKEN (PAT
+# with contents: write). See README → Updates (for maintainers).
+
+name: Prepare release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Which semver segment to increment"
+        required: true
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  bump-and-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require RELEASE_AUTOMATION_TOKEN
+        env:
+          PAT: ${{ secrets.RELEASE_AUTOMATION_TOKEN }}
+        run: |
+          if [ -z "${PAT}" ]; then
+            echo "::error::Add repository secret RELEASE_AUTOMATION_TOKEN (PAT with contents: read and write). The default GITHUB_TOKEN cannot trigger the Release workflow after this job pushes a tag."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_AUTOMATION_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Pull latest main
+        run: git pull --ff-only origin main
+
+      - name: Bump version
+        run: node scripts/bump-version.mjs "${{ github.event.inputs.bump }}"
+
+      - name: Commit and tag
+        id: ver
+        run: |
+          VERSION="$(node -p "JSON.parse(require('node:fs').readFileSync('package.json','utf8')).version")"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
+          if git diff --staged --quiet; then
+            echo "::error::No staged changes after bump (unexpected)."
+            exit 1
+          fi
+          git commit -m "chore(release): v${VERSION}"
+          git tag "v${VERSION}"
+
+      - name: Push commit and tag
+        run: |
+          git push origin main
+          git push origin "v${{ steps.ver.outputs.version }}"
