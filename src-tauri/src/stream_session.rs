@@ -47,6 +47,7 @@ impl ClaudeStreamSession {
         use_continue: bool,
         resume_session_id: Option<&str>,
         stream_bare: bool,
+        stream_verbose: bool,
         stream_extra_args: &[String],
         permission_mode: Option<&str>,
         allowed_tools: Option<&str>,
@@ -77,7 +78,9 @@ impl ClaudeStreamSession {
         cmd.arg("-p");
         cmd.arg(prompt);
         cmd.args(["--output-format", "stream-json"]);
-        cmd.arg("--verbose");
+        if stream_verbose {
+            cmd.arg("--verbose");
+        }
         cmd.arg("--include-partial-messages");
 
         if let Some(id) = resume_session_id {

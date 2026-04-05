@@ -54,6 +54,24 @@ describe("parsePersonasJson", () => {
     expect(r?.[0]?.allowedTools).toBe("Read,Bash");
   });
 
+  it("test_parsePersonasJson_stream_verbose_optional", () => {
+    const raw = [
+      {
+        id: "a",
+        name: "A",
+        cwd: "/tmp",
+        cmd: "npx",
+        cmdArgs: ["x"],
+        args: [],
+        taskFile: "/tmp/t.json",
+        color: "#fff",
+        streamVerbose: true,
+      },
+    ];
+    const r = parsePersonasJson(raw);
+    expect(r?.[0]?.streamVerbose).toBe(true);
+  });
+
   it("test_parsePersonasJson_browse_roots_optional", () => {
     const raw = [
       {

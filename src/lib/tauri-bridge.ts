@@ -28,6 +28,7 @@ export interface SpawnClaudeStreamParams {
   useContinue: boolean;
   resumeSessionId: string | null;
   streamBare: boolean;
+  streamVerbose: boolean;
   streamExtraArgs: string[];
   permissionMode: string | null;
   allowedTools: string | null;
@@ -45,6 +46,7 @@ export async function spawnClaudeStreamSession(
     useContinue: params.useContinue,
     resumeSessionId: params.resumeSessionId,
     streamBare: params.streamBare,
+    streamVerbose: params.streamVerbose,
     streamExtraArgs: params.streamExtraArgs,
     permissionMode: params.permissionMode,
     allowedTools: params.allowedTools,

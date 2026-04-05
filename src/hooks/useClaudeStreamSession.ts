@@ -1,12 +1,21 @@
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { appendCoalesced } from "../lib/coalesce-assistant";
+import { formatDurationMs } from "../lib/format-duration";
 import type { Persona } from "../lib/personas";
 import {
   classifyStreamJsonLine,
   extractSessionIdFromLine,
   type StreamUiRow,
 } from "../lib/stream-json-parser";
+import {
+  createToolStreamState,
+  reduceToolStreamLine,
+  type ToolStreamState,
+} from "../lib/stream-tool-reducer";
 import { killSession, spawnClaudeStreamSession } from "../lib/tauri-bridge";
+import type { TurnUsageSnapshot } from "../lib/usage-extract";
+import { extractUsageFromResultLine } from "../lib/usage-extract";
 
 const MAX_ROWS = 500;
 const MAX_LINE_LEN = 1_000_000;
@@ -40,6 +49,22 @@ function nextId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+function processParsedStreamRecord(
+  parsed: Record<string, unknown>,
+  toolState: ToolStreamState,
+): {
+  toolState: ToolStreamState;
+  toolRow: StreamUiRow | null;
+  usage: TurnUsageSnapshot | null;
+} {
+  const toolOut = reduceToolStreamLine(toolState, parsed);
+  return {
+    toolState: toolOut.state,
+    toolRow: toolOut.row,
+    usage: extractUsageFromResultLine(parsed),
+  };
+}
+
 export function useClaudeStreamSession(
   persona: Persona | null,
   isActive: boolean,
@@ -51,6 +76,8 @@ export function useClaudeStreamSession(
   error: string | null;
   stderrLines: string[];
   footerModel: string | null;
+  turnUsage: TurnUsageSnapshot | null;
+  feedFooter: string | null;
   sendPrompt: (text: string) => Promise<void>;
   stop: () => Promise<void>;
   clearTimeline: () => void;
@@ -60,6 +87,8 @@ export function useClaudeStreamSession(
   const [error, setError] = useState<string | null>(null);
   const [stderrLines, setStderrLines] = useState<string[]>([]);
   const [footerModel, setFooterModel] = useState<string | null>(null);
+  const [turnUsage, setTurnUsage] = useState<TurnUsageSnapshot | null>(null);
+  const [feedFooter, setFeedFooter] = useState<string | null>(null);
 
   const sessionIdRef = useRef<string | null>(null);
   const resumeIdRef = useRef<string | null>(null);
@@ -68,11 +97,11 @@ export function useClaudeStreamSession(
   busyRef.current = busy;
   const personaRef = useRef(persona);
   personaRef.current = persona;
+  const toolStreamRef = useRef<ToolStreamState>(createToolStreamState());
 
-  const appendRow = useCallback((row: StreamUiRow) => {
+  const pushRow = useCallback((row: StreamUiRow) => {
     setEntries((prev) => {
-      const id = nextId();
-      const next = [...prev, { id, row, at: Date.now() }];
+      const next = appendCoalesced(prev, row, nextId);
       if (next.length > MAX_ROWS) {
         return next.slice(-MAX_ROWS);
       }
@@ -85,8 +114,11 @@ export function useClaudeStreamSession(
     setStderrLines([]);
     setError(null);
     setFooterModel(null);
+    setTurnUsage(null);
+    setFeedFooter(null);
     useContinueRef.current = false;
     resumeIdRef.current = null;
+    toolStreamRef.current = createToolStreamState();
   }, []);
 
   useEffect(() => {
@@ -103,6 +135,7 @@ export function useClaudeStreamSession(
     if (!isActive || !persona || !npxOk) {
       return;
     }
+    toolStreamRef.current = createToolStreamState();
     let cancelled = false;
     const unsubs: Array<() => void> = [];
 
@@ -126,13 +159,26 @@ export function useClaudeStreamSession(
           if (sid) {
             resumeIdRef.current = sid;
           }
-          if (isObj(parsed) && typeof parsed.model === "string" && parsed.model.length > 0) {
+        }
+        if (isObj(parsed)) {
+          if (typeof parsed.model === "string" && parsed.model.length > 0) {
             setFooterModel(parsed.model);
           }
+          const out = processParsedStreamRecord(parsed, toolStreamRef.current);
+          toolStreamRef.current = out.toolState;
+          if (out.toolRow !== null) {
+            pushRow(out.toolRow);
+          }
+          if (out.usage !== null) {
+            setTurnUsage(out.usage);
+            if (out.usage.durationMs !== null) {
+              setFeedFooter(`Finished in ${formatDurationMs(out.usage.durationMs)}`);
+            }
+          }
         }
-        const row = classifyStreamJsonLine(line);
-        if (row) {
-          appendRow(row);
+        const classified = classifyStreamJsonLine(line);
+        if (classified !== null) {
+          pushRow(classified);
         }
       });
       const uErr = await listen<StderrEvt>("claude-stream:stderr", (ev) => {
@@ -167,7 +213,7 @@ export function useClaudeStreamSession(
         u();
       });
     };
-  }, [isActive, persona?.id, npxOk, appendRow]);
+  }, [isActive, persona?.id, npxOk, pushRow]);
 
   const stop = useCallback(async () => {
     const sid = sessionIdRef.current;
@@ -185,7 +231,7 @@ export function useClaudeStreamSession(
         return;
       }
       const trimmed = text.trim();
-      if (!trimmed) {
+      if (!trimmed.length) {
         return;
       }
 
@@ -196,8 +242,12 @@ export function useClaudeStreamSession(
       const useContinue =
         useContinueRef.current && (resumeId === null || resumeId === "");
 
-      appendRow({
-        kind: "system_generic",
+      toolStreamRef.current = createToolStreamState();
+      setTurnUsage(null);
+      setFeedFooter(null);
+
+      pushRow({
+        kind: "user_prompt",
         title: "You",
         body: trimmed,
       });
@@ -214,6 +264,7 @@ export function useClaudeStreamSession(
           resumeSessionId:
             resumeId !== null && resumeId.length > 0 ? resumeId : null,
           streamBare: p.streamBare === true,
+          streamVerbose: p.streamVerbose === true,
           streamExtraArgs: p.streamExtraArgs ?? [],
           permissionMode: p.permissionMode ?? null,
           allowedTools: p.allowedTools ?? null,
@@ -225,7 +276,7 @@ export function useClaudeStreamSession(
         setBusy(false);
       }
     },
-    [npxOk, stop, appendRow],
+    [npxOk, stop, pushRow],
   );
 
   return {
@@ -234,8 +285,11 @@ export function useClaudeStreamSession(
     error,
     stderrLines,
     footerModel,
+    turnUsage,
+    feedFooter,
     sendPrompt,
     stop,
     clearTimeline,
   };
 }
+

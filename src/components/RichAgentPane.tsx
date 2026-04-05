@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useClaudeStreamSession } from "../hooks/useClaudeStreamSession";
 import type { Persona } from "../lib/personas";
 import { AgentFeed } from "./AgentFeed";
+import { PermissionPolicyBar } from "./PermissionPolicyBar";
+import { RichAgentDock } from "./RichAgentDock";
 
 interface RichAgentPaneProps {
   readonly persona: Persona;
@@ -24,8 +26,11 @@ export function RichAgentPane({
     error,
     stderrLines,
     footerModel,
+    turnUsage,
+    feedFooter,
     sendPrompt,
     stop,
+    clearTimeline,
   } = useClaudeStreamSession(persona, isActive, npxOk, bootKey);
 
   const [draft, setDraft] = useState("");
@@ -64,14 +69,21 @@ export function RichAgentPane({
     >
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--bg-secondary)] px-3 py-1.5">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-[11px] font-medium text-[var(--text-dim)]">
-            Agent — {persona.name}
+          <span className="rounded-md border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-1 text-[11px] text-[var(--text-dim)]">
+            Session: <strong className="text-[var(--text-primary)]">{persona.name}</strong>
           </span>
-          <span className="text-[10px] text-[var(--text-dim)]">
-            Rich · npx + stream-json (same as Classic)
-          </span>
+          <span className="text-[10px] text-[var(--text-dim)]">Rich · stream-json</span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            className="rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
+            onClick={() => {
+              clearTimeline();
+            }}
+          >
+            Clear timeline
+          </button>
           <button
             type="button"
             className="rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
@@ -93,6 +105,7 @@ export function RichAgentPane({
           </button>
         </div>
       </div>
+      <PermissionPolicyBar persona={persona} />
       {error ? (
         <div
           className="shrink-0 border-b border-[var(--accent-red)]/50 bg-[var(--accent-red)]/10 px-3 py-2 text-[12px] text-[var(--accent-red)]"
@@ -109,7 +122,8 @@ export function RichAgentPane({
           ))}
         </div>
       ) : null}
-      <AgentFeed entries={entries} />
+      <AgentFeed entries={entries} feedFooter={feedFooter} />
+      <RichAgentDock model={footerModel} usage={turnUsage} />
       <div className="shrink-0 border-t border-[var(--border)] bg-[var(--bg-secondary)] px-2 py-2">
         <label className="sr-only" htmlFor={`composer-${persona.id}`}>
           Message to Claude
@@ -146,22 +160,8 @@ export function RichAgentPane({
           >
             Send
           </button>
-          <div className="text-[10px] text-[var(--text-dim)]">
-            {footerModel ? `Model: ${footerModel}` : " "}
-          </div>
+          <span className="text-[10px] text-[var(--text-dim)]">Shift+Enter newline</span>
         </div>
-        {persona.permissionMode || persona.allowedTools ? (
-          <p className="mt-2 text-[10px] text-[var(--text-dim)]">
-            Permissions:{" "}
-            {persona.permissionMode
-              ? `mode=${persona.permissionMode}`
-              : "default"}
-            {persona.allowedTools
-              ? ` · allowedTools=${persona.allowedTools}`
-              : ""}
-            . For interactive approval flows, switch to Classic.
-          </p>
-        ) : null}
       </div>
     </div>
   );

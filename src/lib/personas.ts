@@ -16,6 +16,8 @@ export interface Persona {
   /** Appended to `claude -p` in Rich (stream-json) mode. */
   streamExtraArgs?: string[];
   streamBare?: boolean;
+  /** Rich mode: pass `--verbose` to Claude (raw protocol noise; default off). */
+  streamVerbose?: boolean;
   permissionMode?: string;
   allowedTools?: string;
 }
@@ -98,6 +100,9 @@ export function parsePersonasJson(raw: unknown): Persona[] | null {
     }
     if (o.streamBare === true) {
       p.streamBare = true;
+    }
+    if (o.streamVerbose === true) {
+      p.streamVerbose = true;
     }
     if (isNonEmptyString(o.permissionMode)) {
       p.permissionMode = o.permissionMode;

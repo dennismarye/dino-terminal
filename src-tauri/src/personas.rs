@@ -27,6 +27,9 @@ pub struct Persona {
     pub stream_extra_args: Vec<String>,
     #[serde(default)]
     pub stream_bare: bool,
+    /// When true, Rich mode passes `--verbose` to Claude Code (noisy NDJSON).
+    #[serde(default)]
+    pub stream_verbose: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub permission_mode: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
