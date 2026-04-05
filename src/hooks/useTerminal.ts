@@ -4,10 +4,9 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import { listen } from "@tauri-apps/api/event";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useRef, useState } from "react";
 import type { Persona } from "../lib/personas";
-import { isSafeHttpUrl } from "../lib/safe-http-url";
+import { openExternalHttpUrl } from "../lib/open-external-url";
 import {
   DEFAULT_FONT,
   MAX_FONT,
@@ -130,16 +129,8 @@ export function useTerminal(
     term.loadAddon(fit);
     term.loadAddon(
       new WebLinksAddon((e, uri) => {
-        if (!e.metaKey) {
-          return;
-        }
         e.preventDefault();
-        if (!isSafeHttpUrl(uri)) {
-          return;
-        }
-        void openUrl(uri).catch(() => {
-          /* ignore opener failures */
-        });
+        openExternalHttpUrl(uri);
       }),
     );
     term.loadAddon(search);

@@ -33,7 +33,12 @@ body,
 }
 
 [data-tauri-drag-region] {
-  app-region: drag;
+  -webkit-app-region: drag;
+}
+
+/* Buttons / inputs inside a drag region must not start a window drag */
+[data-tauri-no-drag] {
+  -webkit-app-region: no-drag;
 }
 
 @media (prefers-reduced-motion: reduce) {

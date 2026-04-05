@@ -30,6 +30,30 @@ describe("parsePersonasJson", () => {
     expect(parsePersonasJson({})).toBeNull();
   });
 
+  it("test_parsePersonasJson_stream_options_optional", () => {
+    const raw = [
+      {
+        id: "a",
+        name: "A",
+        cwd: "/tmp",
+        cmd: "npx",
+        cmdArgs: ["x"],
+        args: [],
+        taskFile: "/tmp/t.json",
+        color: "#fff",
+        streamBare: true,
+        streamExtraArgs: ["--model", "opus"],
+        permissionMode: "acceptEdits",
+        allowedTools: "Read,Bash",
+      },
+    ];
+    const r = parsePersonasJson(raw);
+    expect(r?.[0]?.streamBare).toBe(true);
+    expect(r?.[0]?.streamExtraArgs).toEqual(["--model", "opus"]);
+    expect(r?.[0]?.permissionMode).toBe("acceptEdits");
+    expect(r?.[0]?.allowedTools).toBe("Read,Bash");
+  });
+
   it("test_parsePersonasJson_browse_roots_optional", () => {
     const raw = [
       {

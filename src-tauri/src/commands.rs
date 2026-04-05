@@ -5,7 +5,9 @@ use tauri::State;
 
 use crate::personas;
 use crate::pty_manager::PtySession;
+use crate::session::ManagedSession;
 use crate::status;
+use crate::stream_session::ClaudeStreamSession;
 use crate::AppState;
 
 fn ensure_cwd_is_dir(cwd: &Path) -> Result<(), String> {
@@ -72,7 +74,64 @@ pub fn spawn_session(
         .sessions
         .lock()
         .map_err(|_| "sessions lock poisoned".to_string())?;
-    mgr.insert(session_id.clone(), session);
+    mgr.insert_pty(session_id.clone(), session);
+    Ok(session_id)
+}
+
+#[tauri::command]
+pub fn spawn_claude_stream_session(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    cwd: String,
+    cmd: String,
+    cmd_args: Vec<String>,
+    args: Vec<String>,
+    prompt: String,
+    use_continue: bool,
+    resume_session_id: Option<String>,
+    stream_bare: bool,
+    stream_extra_args: Vec<String>,
+    permission_mode: Option<String>,
+    allowed_tools: Option<String>,
+) -> Result<String, String> {
+    if cmd != "npx" {
+        log::warn!("persona.cmd is {cmd}, expected npx — using resolved npx path anyway");
+    }
+    let npx: PathBuf = {
+        let guard = state
+            .npx_path
+            .lock()
+            .map_err(|_| "state lock poisoned".to_string())?;
+        guard
+            .clone()
+            .ok_or_else(|| "npx not found — install Node.js 22+".to_string())?
+    };
+    let cwd_path = PathBuf::from(&cwd);
+    ensure_cwd_is_dir(&cwd_path)?;
+    let session_id = uuid::Uuid::new_v4().to_string();
+    let resume_ref = resume_session_id.as_deref();
+    let pm_ref = permission_mode.as_deref();
+    let tools_ref = allowed_tools.as_deref();
+    let session = ClaudeStreamSession::spawn(
+        &app,
+        session_id.clone(),
+        &npx,
+        &cwd_path,
+        &cmd_args,
+        &prompt,
+        use_continue,
+        resume_ref,
+        stream_bare,
+        &stream_extra_args,
+        pm_ref,
+        tools_ref,
+        &args,
+    )?;
+    let mut mgr = state
+        .sessions
+        .lock()
+        .map_err(|_| "sessions lock poisoned".to_string())?;
+    mgr.insert_stream(session_id.clone(), session);
     Ok(session_id)
 }
 
@@ -87,8 +146,8 @@ pub fn write_to_pty(
         .lock()
         .map_err(|_| "sessions lock poisoned".to_string())?;
     let s = mgr
-        .get(&session_id)
-        .ok_or_else(|| "unknown session".to_string())?;
+        .get_pty(&session_id)
+        .ok_or_else(|| "unknown PTY session".to_string())?;
     s.write_bytes(&data)
 }
 
@@ -104,8 +163,8 @@ pub fn resize_pty(
         .lock()
         .map_err(|_| "sessions lock poisoned".to_string())?;
     let s = mgr
-        .get(&session_id)
-        .ok_or_else(|| "unknown session".to_string())?;
+        .get_pty(&session_id)
+        .ok_or_else(|| "unknown PTY session".to_string())?;
     s.resize(cols, rows)
 }
 
@@ -118,7 +177,10 @@ pub fn kill_session(state: State<'_, AppState>, session_id: String) -> Result<()
     let s = mgr
         .remove(&session_id)
         .ok_or_else(|| "unknown session".to_string())?;
-    s.kill_graceful()
+    match s {
+        ManagedSession::Pty(p) => p.kill_graceful(),
+        ManagedSession::Stream(st) => st.kill_graceful(),
+    }
 }
 
 #[tauri::command]

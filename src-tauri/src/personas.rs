@@ -22,6 +22,15 @@ pub struct Persona {
     pub color: String,
     #[serde(default)]
     pub browse_roots: Vec<BrowseRoot>,
+    /// Extra CLI args appended to `claude -p` in Rich (stream-json) mode.
+    #[serde(default)]
+    pub stream_extra_args: Vec<String>,
+    #[serde(default)]
+    pub stream_bare: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub permission_mode: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub allowed_tools: Option<String>,
 }
 
 fn validate_personas(list: &[Persona]) -> bool {

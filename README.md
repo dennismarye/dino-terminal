@@ -9,8 +9,9 @@
 | Area | Purpose |
 |------|--------|
 | **Terminal** | Full **xterm.js** session backed by a **pseudo-terminal** on your machine. Claude Code runs here with your normal shell environment (after `npx` resolution). |
+| **Rich agent** | Optional **timeline** view using the same **`npx` + persona `cmdArgs`** as Classic, plus **`-p`** and **`--output-format stream-json`** (subprocess only — no Anthropic SDK in the app). Toggle **Rich agent** / **Classic terminal** per persona; multi-turn uses `--continue` or `--resume` when the stream exposes a `session_id`. See `docs/rich-agent-stream-json.md`. |
 | **Sessions (personas)** | Switch between **named profiles** (for example one profile per repo or role). Each profile has its own **working directory**, **CLI arguments** (extra `--add-dir` roots, flags), **file-tree roots**, and **task file**—so one app can represent different projects without retyping paths. |
-| **Files** | Browse allowed directories (by default under **`$HOME`**) and **open files** in a **preview** pane (markdown and text). Useful for skimming specs or handovers next to the agent. |
+| **Files** | Browse allowed directories (by default under **`$HOME`**) and **open files** in **tabbed preview** panes (markdown and text). Useful for skimming specs or handovers next to the agent. |
 | **Tasks** | Watches the **tasks JSON** (`taskFile`); shows up to **10** rows plus **`+N more`** if the list is longer. Statuses **`blocked`** and **`parked`** (exact strings) and common **in-progress / completed / pending** values get distinct markers (see **How to use** → Tasks panel). |
 | **Status bar** | Periodically runs your **`~/.claude/status_line_command.sh`** and shows **context / rate-limit style** fields when the script output can be parsed (see limitations below). |
 
@@ -28,6 +29,7 @@
 - **Node.js 22+** and npm
 - **Rust** stable + Cargo ([rustup](https://rustup.rs/))
 - **Xcode Command Line Tools** (macOS)
+- **Rich agent** uses the same **`npx`** resolution as Classic (no separate `claude` binary lookup)
 
 ## Install from source
 

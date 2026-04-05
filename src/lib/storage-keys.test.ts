@@ -5,7 +5,9 @@ import {
   MIN_FONT,
   loadFontSize,
   loadSidebarVisible,
+  loadViewMode,
   saveFontSize,
+  saveViewMode,
 } from "./storage-keys";
 
 function mockLocalStorage() {
@@ -56,5 +58,14 @@ describe("storage-keys", () => {
 
   it("test_loadSidebarVisible_defaults_true", () => {
     expect(loadSidebarVisible()).toBe(true);
+  });
+
+  it("test_loadViewMode_defaults_classic", () => {
+    expect(loadViewMode("p1")).toBe("classic");
+  });
+
+  it("test_saveViewMode_rich_roundtrip", () => {
+    saveViewMode("p2", "rich");
+    expect(loadViewMode("p2")).toBe("rich");
   });
 });

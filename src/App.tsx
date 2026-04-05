@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CommandPalette, type PaletteCommand } from "./components/CommandPalette";
+import { DocumentTabBar } from "./components/DocumentTabBar";
 import { DocumentViewer } from "./components/DocumentViewer";
 import { ResizablePanels } from "./components/ResizablePanels";
 import { ShortcutsHelp } from "./components/ShortcutsHelp";
@@ -13,10 +14,7 @@ import { usePersonas } from "./hooks/usePersonas";
 import { useStatusLine } from "./hooks/useStatusLine";
 import { useTasks } from "./hooks/useTasks";
 import { useUpdateAvailability } from "./hooks/useUpdateAvailability";
-import {
-  getNpxStatus,
-  getPersonasConfigPath,
-} from "./lib/tauri-bridge";
+import { getNpxStatus, getPersonasConfigPath } from "./lib/tauri-bridge";
 import {
   loadSidebarVisible,
   saveSidebarVisible,
@@ -27,6 +25,11 @@ function isFocusInsideTerminalHost(): boolean {
   return !!(a && a.closest("[data-terminal-host], .xterm"));
 }
 
+function isFocusInsideRichAgentPane(): boolean {
+  const a = document.activeElement;
+  return !!(a && a.closest("[data-rich-agent-pane]"));
+}
+
 function App() {
   const personas = usePersonas();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -35,7 +38,8 @@ function App() {
   );
   const [npxOk, setNpxOk] = useState(true);
   const [bootKeys, setBootKeys] = useState<Record<string, number>>({});
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [docTabs, setDocTabs] = useState<string[]>([]);
+  const [activeDocTab, setActiveDocTab] = useState<string | null>(null);
   const status = useStatusLine();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -61,8 +65,39 @@ function App() {
   }, [personas, activeId]);
 
   useEffect(() => {
-    setSelectedFile(null);
+    setDocTabs([]);
+    setActiveDocTab(null);
   }, [activeId]);
+
+  const openOrFocusDoc = useCallback((path: string) => {
+    setDocTabs((tabs) => (tabs.includes(path) ? tabs : [...tabs, path]));
+    setActiveDocTab(path);
+  }, []);
+
+  const closeDocTab = useCallback((path: string) => {
+    setDocTabs((tabs) => {
+      const idx = tabs.indexOf(path);
+      const next = tabs.filter((t) => t !== path);
+      setActiveDocTab((cur) => {
+        if (cur !== path) {
+          return cur;
+        }
+        if (next.length === 0) {
+          return null;
+        }
+        if (idx <= 0) {
+          return next[0] ?? null;
+        }
+        return next[idx - 1] ?? next[0] ?? null;
+      });
+      return next;
+    });
+  }, []);
+
+  const closeOtherDocTabs = useCallback((keep: string) => {
+    setDocTabs([keep]);
+    setActiveDocTab(keep);
+  }, []);
 
   useEffect(() => {
     const refreshNpx = () => {
@@ -71,7 +106,9 @@ function App() {
       });
     };
     refreshNpx();
-    const interval = globalThis.setInterval(refreshNpx, 45_000);
+    const interval = globalThis.setInterval(() => {
+      refreshNpx();
+    }, 45_000);
     const onVis = () => {
       if (document.visibilityState === "visible") {
         refreshNpx();
@@ -136,6 +173,14 @@ function App() {
 
   const paletteCommands: PaletteCommand[] = useMemo(
     () => [
+      {
+        id: "close-all-doc-tabs",
+        label: "Close all document tabs",
+        run: () => {
+          setDocTabs([]);
+          setActiveDocTab(null);
+        },
+      },
       {
         id: "toggle-sidebar",
         label: "Toggle sidebar",
@@ -217,10 +262,13 @@ function App() {
         return;
       }
       if (e.key === "w" || e.key === "W") {
-        if (selectedFile) {
+        if (isFocusInsideTerminalHost() || isFocusInsideRichAgentPane()) {
+          return;
+        }
+        if (activeDocTab) {
           e.preventDefault();
           e.stopImmediatePropagation();
-          setSelectedFile(null);
+          closeDocTab(activeDocTab);
           return;
         }
       }
@@ -265,8 +313,9 @@ function App() {
     return () => globalThis.removeEventListener("keydown", onKey, true);
   }, [
     personas,
-    selectedFile,
+    activeDocTab,
     activeId,
+    closeDocTab,
     sidebarVisible,
     openPersonasConfig,
     paletteOpen,
@@ -293,14 +342,23 @@ function App() {
             onSelectPersona={setActiveId}
             tasks={tasks}
             taskMoreCount={taskMoreCount}
-            onFileSelect={setSelectedFile}
+            onFileSelect={openOrFocusDoc}
           />
         }
         center={
-          <DocumentViewer
-            filePath={selectedFile}
-            browseRoots={browseRootsForViewer}
-          />
+          <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+            <DocumentTabBar
+              tabs={docTabs}
+              activePath={activeDocTab}
+              onSelect={setActiveDocTab}
+              onClose={closeDocTab}
+              onCloseOthers={closeOtherDocTabs}
+            />
+            <DocumentViewer
+              filePath={activeDocTab}
+              browseRoots={browseRootsForViewer}
+            />
+          </div>
         }
         right={
           <div className="relative h-full min-h-0 min-w-0 bg-[var(--bg-primary)] p-2">

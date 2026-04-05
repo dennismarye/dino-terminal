@@ -19,6 +19,38 @@ export async function getNpxStatus(): Promise<NpxStatus> {
   return invoke<NpxStatus>("get_npx_status");
 }
 
+export interface SpawnClaudeStreamParams {
+  cwd: string;
+  cmd: string;
+  cmdArgs: string[];
+  args: string[];
+  prompt: string;
+  useContinue: boolean;
+  resumeSessionId: string | null;
+  streamBare: boolean;
+  streamExtraArgs: string[];
+  permissionMode: string | null;
+  allowedTools: string | null;
+}
+
+export async function spawnClaudeStreamSession(
+  params: SpawnClaudeStreamParams,
+): Promise<string> {
+  return invoke<string>("spawn_claude_stream_session", {
+    cwd: params.cwd,
+    cmd: params.cmd,
+    cmdArgs: params.cmdArgs,
+    args: params.args,
+    prompt: params.prompt,
+    useContinue: params.useContinue,
+    resumeSessionId: params.resumeSessionId,
+    streamBare: params.streamBare,
+    streamExtraArgs: params.streamExtraArgs,
+    permissionMode: params.permissionMode,
+    allowedTools: params.allowedTools,
+  });
+}
+
 /** Tauri v2 IPC: argument keys are camelCase (Rust `cmd_args` → `cmdArgs`). */
 export async function spawnSession(persona: Persona): Promise<string> {
   return invoke<string>("spawn_session", {

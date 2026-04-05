@@ -4,6 +4,7 @@ mod personas;
 mod pty_manager;
 mod session;
 mod status;
+mod stream_session;
 
 use std::sync::Mutex;
 
@@ -33,6 +34,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(AppState {
             npx_path: Mutex::new(None),
@@ -70,6 +72,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_npx_status,
             commands::spawn_session,
+            commands::spawn_claude_stream_session,
             commands::write_to_pty,
             commands::resize_pty,
             commands::kill_session,

@@ -13,6 +13,11 @@ export interface Persona {
   taskFile: string;
   color: string;
   browseRoots?: BrowseRoot[];
+  /** Appended to `claude -p` in Rich (stream-json) mode. */
+  streamExtraArgs?: string[];
+  streamBare?: boolean;
+  permissionMode?: string;
+  allowedTools?: string;
 }
 
 function isNonEmptyString(v: unknown): v is string {
@@ -71,6 +76,10 @@ export function parsePersonasJson(raw: unknown): Persona[] | null {
     if (roots === null) {
       return null;
     }
+    const sea = o.streamExtraArgs;
+    if (sea !== undefined && (!Array.isArray(sea) || !sea.every((x) => typeof x === "string"))) {
+      return null;
+    }
     const p: Persona = {
       id: o.id,
       name: o.name,
@@ -83,6 +92,18 @@ export function parsePersonasJson(raw: unknown): Persona[] | null {
     };
     if (roots.length > 0) {
       p.browseRoots = roots;
+    }
+    if (Array.isArray(sea) && sea.length > 0) {
+      p.streamExtraArgs = sea as string[];
+    }
+    if (o.streamBare === true) {
+      p.streamBare = true;
+    }
+    if (isNonEmptyString(o.permissionMode)) {
+      p.permissionMode = o.permissionMode;
+    }
+    if (isNonEmptyString(o.allowedTools)) {
+      p.allowedTools = o.allowedTools;
     }
     out.push(p);
   }

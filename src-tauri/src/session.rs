@@ -1,9 +1,24 @@
 use std::collections::HashMap;
 
 use crate::pty_manager::PtySession;
+use crate::stream_session::ClaudeStreamSession;
+
+pub enum ManagedSession {
+    Pty(PtySession),
+    Stream(ClaudeStreamSession),
+}
+
+impl ManagedSession {
+    pub fn kill_graceful(&self) -> Result<(), String> {
+        match self {
+            ManagedSession::Pty(s) => s.kill_graceful(),
+            ManagedSession::Stream(s) => s.kill_graceful(),
+        }
+    }
+}
 
 pub struct SessionManager {
-    sessions: HashMap<String, PtySession>,
+    sessions: HashMap<String, ManagedSession>,
 }
 
 impl SessionManager {
@@ -13,15 +28,22 @@ impl SessionManager {
         }
     }
 
-    pub fn insert(&mut self, id: String, session: PtySession) {
-        self.sessions.insert(id, session);
+    pub fn insert_pty(&mut self, id: String, session: PtySession) {
+        self.sessions.insert(id, ManagedSession::Pty(session));
     }
 
-    pub fn get(&self, id: &str) -> Option<&PtySession> {
-        self.sessions.get(id)
+    pub fn insert_stream(&mut self, id: String, session: ClaudeStreamSession) {
+        self.sessions.insert(id, ManagedSession::Stream(session));
     }
 
-    pub fn remove(&mut self, id: &str) -> Option<PtySession> {
+    pub fn get_pty(&self, id: &str) -> Option<&PtySession> {
+        match self.sessions.get(id)? {
+            ManagedSession::Pty(p) => Some(p),
+            ManagedSession::Stream(_) => None,
+        }
+    }
+
+    pub fn remove(&mut self, id: &str) -> Option<ManagedSession> {
         self.sessions.remove(id)
     }
 

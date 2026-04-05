@@ -10,10 +10,13 @@ const ROWS: [string, string][] = [
   ["Cmd+,", "Open personas.json"],
   ["Cmd+N", "Restart terminal (active persona)"],
   ["Cmd+1 / Cmd+2", "Switch to 1st / 2nd persona"],
-  ["Cmd+W", "Close preview (or close PTY if no file)"],
+  [
+    "Cmd+W",
+    "Close document tab when sidebar/viewer focused; stop Rich or close PTY when that pane focused",
+  ],
   ["Cmd+F", "Find in terminal (when terminal focused)"],
   ["Cmd+± / Cmd+0", "Terminal font size / reset"],
-  ["Cmd+click", "Open http(s) link in browser"],
+  ["Click link", "Open http(s) URL in default browser (terminal or Rich feed)"],
   ["?", "This help"],
 ];
 

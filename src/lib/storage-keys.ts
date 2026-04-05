@@ -1,3 +1,32 @@
+export type AgentViewMode = "classic" | "rich";
+
+export const STORAGE_VIEW_MODE_PREFIX = "dino-terminal-view-mode-";
+
+export function loadViewMode(personaId: string): AgentViewMode {
+  try {
+    const v = globalThis.localStorage.getItem(
+      `${STORAGE_VIEW_MODE_PREFIX}${personaId}`,
+    );
+    if (v === "rich") {
+      return "rich";
+    }
+  } catch {
+    /* ignore */
+  }
+  return "classic";
+}
+
+export function saveViewMode(personaId: string, mode: AgentViewMode): void {
+  try {
+    globalThis.localStorage.setItem(
+      `${STORAGE_VIEW_MODE_PREFIX}${personaId}`,
+      mode,
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
 export const STORAGE_FONT_SIZE = "dino-terminal-font-size";
 export const STORAGE_WEBGL = "dino-terminal-terminal-webgl";
 export const STORAGE_SIDEBAR_VISIBLE = "dino-terminal-sidebar-visible";
