@@ -10,8 +10,12 @@ interface AgentFeedProps {
   feedFooter?: string | null;
 }
 
+/** Text must be selectable so WKWebView shows the full system context menu (Look Up, Services, etc.). */
+const FEED_TEXT =
+  "select-text cursor-text [&_a]:cursor-pointer [&_code]:select-text [&_code]:cursor-text";
+
 function cardShell(kind: StreamUiRow["kind"], children: ReactNode): ReactElement {
-  const base = "rounded-[10px] border px-3.5 py-2.5 text-[13px] leading-relaxed";
+  const base = `rounded-[10px] border px-3.5 py-2.5 text-[13px] leading-relaxed ${FEED_TEXT}`;
   const cardPrimary = `${base} border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)]`;
   const cardMuted = `${base} border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)]`;
   switch (kind) {
@@ -37,7 +41,9 @@ function cardShell(kind: StreamUiRow["kind"], children: ReactNode): ReactElement
         </div>
       );
     case "tool_run":
-      return <div className="border-0 p-0">{children}</div>;
+      return (
+        <div className={`border-0 p-0 ${FEED_TEXT}`}>{children}</div>
+      );
     case "unknown":
       return (
         <div
@@ -108,7 +114,7 @@ export function AgentFeed({ entries, feedFooter }: Readonly<AgentFeedProps>) {
             ))}
           </ul>
           {entries.length === 0 ? (
-            <p className="px-2 py-10 text-center text-[12px] text-[var(--text-dim)]">
+            <p className="cursor-text select-text px-2 py-10 text-center text-[12px] text-[var(--text-dim)]">
               Send a message to run Claude Code in stream-json mode. Tool runs need{" "}
               <code className="rounded bg-[var(--bg-secondary)] px-1">streamVerbose</code> in the
               persona so the CLI emits <code className="rounded bg-[var(--bg-secondary)] px-1">content_block_*</code>{" "}
@@ -116,7 +122,9 @@ export function AgentFeed({ entries, feedFooter }: Readonly<AgentFeedProps>) {
             </p>
           ) : null}
           {feedFooter !== null && feedFooter !== undefined && feedFooter.length > 0 ? (
-            <p className="mt-6 text-center text-[11px] text-[var(--text-dim)]">{feedFooter}</p>
+            <p className="mt-6 cursor-text select-text text-center text-[11px] text-[var(--text-dim)]">
+              {feedFooter}
+            </p>
           ) : null}
         </div>
       </div>

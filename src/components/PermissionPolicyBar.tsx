@@ -16,7 +16,7 @@ export function PermissionPolicyBar({ persona }: Readonly<PermissionPolicyBarPro
   }
   return (
     <div
-      className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2"
+      className="flex flex-wrap cursor-text select-text items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2"
       data-permission-policy-bar
     >
       <span className="rounded-md border border-[var(--accent-green)]/40 bg-[var(--accent-green)]/10 px-2 py-1 text-[11px] text-[var(--accent-green)]">

@@ -108,17 +108,19 @@ export function RichAgentPane({
       <PermissionPolicyBar persona={persona} />
       {error ? (
         <div
-          className="shrink-0 border-b border-[var(--accent-red)]/50 bg-[var(--accent-red)]/10 px-3 py-2 text-[12px] text-[var(--accent-red)]"
+          className="shrink-0 cursor-text select-text border-b border-[var(--accent-red)]/50 bg-[var(--accent-red)]/10 px-3 py-2 text-[12px] text-[var(--accent-red)]"
           role="alert"
         >
           {error}
         </div>
       ) : null}
       {stderrLines.length > 0 ? (
-        <div className="max-h-20 shrink-0 overflow-y-auto border-b border-[var(--border)] bg-[var(--bg-secondary)] px-3 py-1 font-mono text-[10px] text-[var(--text-dim)]">
+        <div className="max-h-20 shrink-0 cursor-text select-text overflow-y-auto border-b border-[var(--border)] bg-[var(--bg-secondary)] px-3 py-1 font-mono text-[10px] text-[var(--text-dim)]">
           {stderrLines.map((line, i) => (
             // eslint-disable-next-line react/no-array-index-key -- stderr order is stable enough for log lines
-            <div key={`${i}-${line.slice(0, 24)}`}>{line}</div>
+            <div key={`${i}-${line.slice(0, 24)}`} className="select-text">
+              {line}
+            </div>
           ))}
         </div>
       ) : null}
@@ -147,7 +149,7 @@ export function RichAgentPane({
               : "npx not found — install Node.js 22+"
           }
           rows={3}
-          className="mb-2 w-full resize-y rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-1.5 text-[13px] text-[var(--text-primary)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)] disabled:opacity-50"
+          className="mb-2 w-full cursor-text resize-y rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-1.5 text-[13px] text-[var(--text-primary)] outline-none select-text focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)] disabled:opacity-50"
         />
         <div className="flex items-center justify-between gap-2">
           <button

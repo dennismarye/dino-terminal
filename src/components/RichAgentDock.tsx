@@ -38,7 +38,7 @@ export function RichAgentDock({ model, usage }: Readonly<RichAgentDockProps>) {
       className="shrink-0 space-y-2 border-t border-[var(--border)] bg-[var(--bg-secondary)] px-3 py-2"
       data-rich-agent-dock
     >
-      <div className="flex flex-wrap items-center gap-2 text-[10px] text-[var(--text-dim)]">
+      <div className="flex flex-wrap cursor-text select-text items-center gap-2 text-[10px] text-[var(--text-dim)]">
         <div className="flex min-w-0 max-w-[55%] items-center gap-1 truncate rounded-md border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-1">
           <span className="truncate font-medium text-[var(--text-primary)]">Claude</span>
           {model ? (

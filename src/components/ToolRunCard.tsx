@@ -14,7 +14,7 @@ export function ToolRunCard({ row }: Readonly<ToolRunCardProps>) {
 
   return (
     <div
-      className="overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--bg-secondary)]"
+      className="cursor-text select-text overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--bg-secondary)] [&_code]:cursor-text [&_code]:select-text"
       data-tool-run-card
     >
       <div className="flex items-center gap-2.5 border-b border-[var(--border)] bg-[var(--bg-primary)] px-3.5 py-2.5">
@@ -32,7 +32,7 @@ export function ToolRunCard({ row }: Readonly<ToolRunCardProps>) {
         ) : null}
       </div>
       <div className="px-3.5 py-2.5">
-        <code className="block whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed text-[var(--text-secondary)]">
+        <code className="block cursor-text select-text whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed text-[var(--text-secondary)]">
           {row.command}
         </code>
       </div>

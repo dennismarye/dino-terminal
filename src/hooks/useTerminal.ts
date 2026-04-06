@@ -15,6 +15,7 @@ import {
   saveFontSize,
   shouldUseWebGl,
 } from "../lib/storage-keys";
+import { attachXtermContextMenu } from "../lib/terminal-context-menu";
 import {
   killSession,
   resizePty,
@@ -124,14 +125,26 @@ export function useTerminal(
       theme: { ...baseTheme, cursor: persona?.color ?? baseTheme.cursor },
       scrollback: 1000,
     });
+    term.attachCustomKeyEventHandler(() => true);
+    const linkHoverRef: { current: string | null } = { current: null };
     const fit = new FitAddon();
     const search = new SearchAddon();
     term.loadAddon(fit);
     term.loadAddon(
-      new WebLinksAddon((e, uri) => {
-        e.preventDefault();
-        openExternalHttpUrl(uri);
-      }),
+      new WebLinksAddon(
+        (e, uri) => {
+          e.preventDefault();
+          openExternalHttpUrl(uri);
+        },
+        {
+          hover: (_ev, text) => {
+            linkHoverRef.current = text;
+          },
+          leave: () => {
+            linkHoverRef.current = null;
+          },
+        },
+      ),
     );
     term.loadAddon(search);
     term.open(el);
@@ -151,7 +164,9 @@ export function useTerminal(
       findPrevious: (query: string) => search.findPrevious(query, {}),
       clearDecorations: () => search.clearDecorations(),
     };
+    const detachContextMenu = attachXtermContextMenu(term, () => linkHoverRef.current);
     return () => {
+      detachContextMenu();
       findControlRef.current = null;
       searchRef.current = null;
       term.dispose();
