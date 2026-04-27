@@ -100,10 +100,10 @@ export function DocumentViewer({ filePath, browseRoots }: DocumentViewerProps) {
     return (
       <div className="flex min-h-0 min-w-[200px] flex-1 flex-col bg-[var(--bg-primary)]">
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-          <p className="text-sm text-[var(--text-dim)]">
+          <p className="text-[15px] font-medium text-[var(--text-secondary)]">
             Select a file to preview
           </p>
-          <p className="max-w-sm text-[12px] text-[var(--text-dim)]">
+          <p className="max-w-sm text-[13px] leading-relaxed text-[var(--text-dim)]">
             Pick a persona, then open a file from the Files section in the
             sidebar.
           </p>
@@ -116,7 +116,7 @@ export function DocumentViewer({ filePath, browseRoots }: DocumentViewerProps) {
     <div className="flex min-h-0 min-w-[200px] flex-1 flex-col overflow-hidden bg-[var(--bg-primary)]">
       <div className="flex shrink-0 items-center gap-2 border-b border-[var(--border)] px-3 py-2">
         <span
-          className="min-w-0 flex-1 truncate text-[11px] text-[var(--text-dim)]"
+          className="min-w-0 flex-1 truncate text-[12px] text-[var(--text-secondary)]"
           title={filePath}
         >
           {header}

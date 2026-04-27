@@ -3,11 +3,17 @@ import {
   DEFAULT_FONT,
   MAX_FONT,
   MIN_FONT,
+  cycleTerminalFontPreset,
+  loadComfortTheme,
   loadFontSize,
   loadSidebarVisible,
+  loadTerminalFontPreset,
   loadViewMode,
+  saveComfortTheme,
   saveFontSize,
+  saveTerminalFontPreset,
   saveViewMode,
+  toggleComfortTheme,
 } from "./storage-keys";
 
 function mockLocalStorage() {
@@ -67,5 +73,26 @@ describe("storage-keys", () => {
   it("test_saveViewMode_rich_roundtrip", () => {
     saveViewMode("p2", "rich");
     expect(loadViewMode("p2")).toBe("rich");
+  });
+
+  it("test_cycleTerminalFontPreset_rotates_three_values", () => {
+    saveTerminalFontPreset("system-mono");
+    expect(cycleTerminalFontPreset()).toBe("jetbrains");
+    expect(cycleTerminalFontPreset()).toBe("fira");
+    expect(cycleTerminalFontPreset()).toBe("system-mono");
+    expect(loadTerminalFontPreset()).toBe("system-mono");
+  });
+
+  it("test_loadTerminalFontPreset_invalid_falls_back_system", () => {
+    globalThis.localStorage.setItem("dino-terminal-font-preset", "bogus");
+    expect(loadTerminalFontPreset()).toBe("system-mono");
+  });
+
+  it("test_toggleComfortTheme_roundtrip", () => {
+    saveComfortTheme(false);
+    expect(loadComfortTheme()).toBe(false);
+    expect(toggleComfortTheme()).toBe(true);
+    expect(loadComfortTheme()).toBe(true);
+    expect(toggleComfortTheme()).toBe(false);
   });
 });

@@ -8,10 +8,17 @@ import { useEffect, useRef, useState } from "react";
 import type { Persona } from "../lib/personas";
 import { openExternalHttpUrl } from "../lib/open-external-url";
 import {
+  APPEARANCE_CHANGE_EVENT,
+  syncComfortThemeClass,
+  terminalFontFamilyForPreset,
+} from "../lib/appearance";
+import {
   DEFAULT_FONT,
   MAX_FONT,
   MIN_FONT,
+  loadComfortTheme,
   loadFontSize,
+  loadTerminalFontPreset,
   saveFontSize,
   shouldUseWebGl,
 } from "../lib/storage-keys";
@@ -29,9 +36,10 @@ import "@xterm/xterm/css/xterm.css";
 const baseTheme = {
   background: "#1E1E2E",
   foreground: "#CDD6F4",
-  cursor: "#FF6B35",
+  /* Catppuccin peach — easier on the eyes than pure CTO orange for default cursor */
+  cursor: "#FAB387",
   cursorAccent: "#1E1E2E",
-  selectionBackground: "rgba(205, 214, 244, 0.15)",
+  selectionBackground: "rgba(205, 214, 244, 0.22)",
   black: "#45475A",
   red: "#F38BA8",
   green: "#A6E3A1",
@@ -49,6 +57,24 @@ const baseTheme = {
   brightCyan: "#94E2D5",
   brightWhite: "#A6ADC8",
 };
+
+/** xterm surface when “comfort” shell theme is on (aligned with `html.dino-comfort`). */
+const comfortXtermSurface = {
+  background: "#242438",
+  foreground: "#DCE0F0",
+  selectionBackground: "rgba(220, 224, 240, 0.2)",
+};
+
+function buildXtermTheme(personaCursor: string | undefined) {
+  const comfort = loadComfortTheme();
+  const merged = comfort
+    ? { ...baseTheme, ...comfortXtermSurface }
+    : { ...baseTheme };
+  return {
+    ...merged,
+    cursor: personaCursor ?? merged.cursor,
+  };
+}
 
 interface PtyDataEvt {
   sessionId: string;
@@ -120,9 +146,9 @@ export function useTerminal(
     const initialSize = loadFontSize();
     const term = new Terminal({
       cursorBlink: true,
-      fontFamily: "JetBrains Mono, Menlo, monospace",
+      fontFamily: terminalFontFamilyForPreset(loadTerminalFontPreset()),
       fontSize: initialSize,
-      theme: { ...baseTheme, cursor: persona?.color ?? baseTheme.cursor },
+      theme: buildXtermTheme(persona?.color),
       scrollback: 1000,
     });
     term.attachCustomKeyEventHandler(() => true);
@@ -165,7 +191,20 @@ export function useTerminal(
       clearDecorations: () => search.clearDecorations(),
     };
     const detachContextMenu = attachXtermContextMenu(term, () => linkHoverRef.current);
+
+    const applyAppearance = () => {
+      const p = personaRef.current;
+      term.options.fontFamily = terminalFontFamilyForPreset(
+        loadTerminalFontPreset(),
+      );
+      term.options.theme = buildXtermTheme(p?.color);
+      syncComfortThemeClass();
+    };
+    applyAppearance();
+    globalThis.addEventListener(APPEARANCE_CHANGE_EVENT, applyAppearance);
+
     return () => {
+      globalThis.removeEventListener(APPEARANCE_CHANGE_EVENT, applyAppearance);
       detachContextMenu();
       findControlRef.current = null;
       searchRef.current = null;
@@ -180,10 +219,7 @@ export function useTerminal(
     if (!term || !persona) {
       return;
     }
-    term.options.theme = {
-      ...baseTheme,
-      cursor: persona.color ?? baseTheme.cursor,
-    };
+    term.options.theme = buildXtermTheme(persona.color);
   }, [persona?.color, persona]);
 
   useEffect(() => {

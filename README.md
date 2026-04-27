@@ -248,6 +248,15 @@ If you need roots **outside** `$HOME` (e.g. `/Volumes/Projects/...`), add anothe
 | **Cmd+F** | **Find** in terminal (when the terminal is focused). **Cmd+click** an **http(s)** link in the terminal to open it in your default browser. |
 | **Cmd+=** / **Cmd+-** / **Cmd+0** | **Larger** / **smaller** / **reset** terminal font size. |
 
+The command palette (**Cmd+Shift+P**) also includes **Cycle terminal font** (system mono → JetBrains Mono → Fira Code, if installed) and **Toggle comfort theme** (softer shell + xterm surface, persisted in `localStorage`).
+
+### Appearance (typography and comfort)
+
+- **Shell UI** uses a **system UI sans-serif** stack (no bundled Inter) for sidebars, tabs, and chrome.
+- **Classic terminal** defaults to **system monospace** (`ui-monospace`, SF Mono, Menlo, …). **JetBrains Mono** / **Fira Code** apply when you pick those presets in the palette and the font is installed on the system.
+- **Comfort theme** (palette) applies **`html.dino-comfort`** CSS variables and a slightly softer xterm background/foreground for long sessions.
+- When the OS sets **prefers-contrast: more**, the app increases contrast on dim text and borders.
+
 Personas are **re-polled** periodically while the app runs. If you change `cwd` or roots for an active session, use **Cmd+N** on that tab so the terminal matches the updated config.
 
 ### Terminal (`npx` / Claude Code)

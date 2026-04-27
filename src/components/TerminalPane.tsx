@@ -98,18 +98,18 @@ function ClassicTerminalPaneInner({
       style={{ display: isActive ? "flex" : "none" }}
       aria-hidden={!isActive}
     >
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--bg-secondary)] px-3 py-1.5">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-[11px] font-medium text-[var(--text-dim)]">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--bg-secondary)] px-3 py-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-[12px] font-medium text-[var(--text-secondary)]">
             Terminal — {persona.name}
           </span>
-          <span className="text-[10px] text-[var(--text-dim)]">
+          <span className="text-[11px] text-[var(--text-dim)]">
             Cmd+F find · Cmd± font · click http(s) links to open in browser
           </span>
         </div>
         <button
           type="button"
-          className="shrink-0 rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
+          className="shrink-0 rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
           onClick={() => {
             onSwitchToRich();
           }}
@@ -149,11 +149,11 @@ function ClassicTerminalPaneInner({
               }
             }}
             placeholder="Find…"
-            className="min-w-0 flex-1 rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-1 text-[12px] text-[var(--text-primary)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
+            className="min-w-0 flex-1 rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-1.5 text-[13px] text-[var(--text-primary)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
           />
           <button
             type="button"
-            className="shrink-0 rounded px-2 py-1 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
+            className="shrink-0 rounded px-2 py-1 text-[12px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
             onClick={() => {
               findControlRef.current?.findPrevious(findQuery);
             }}
@@ -162,7 +162,7 @@ function ClassicTerminalPaneInner({
           </button>
           <button
             type="button"
-            className="shrink-0 rounded px-2 py-1 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
+            className="shrink-0 rounded px-2 py-1 text-[12px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
             onClick={() => {
               findControlRef.current?.findNext(findQuery);
             }}
@@ -173,7 +173,7 @@ function ClassicTerminalPaneInner({
       ) : null}
       <div
         ref={ref}
-        className="min-h-0 min-w-0 flex-1 overflow-hidden p-1"
+        className="min-h-0 min-w-0 flex-1 overflow-hidden p-2"
         data-terminal-host
       />
     </div>
