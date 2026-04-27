@@ -15,9 +15,12 @@ import { useStatusLine } from "./hooks/useStatusLine";
 import { useTasks } from "./hooks/useTasks";
 import { useUpdateAvailability } from "./hooks/useUpdateAvailability";
 import { getNpxStatus, getPersonasConfigPath } from "./lib/tauri-bridge";
+import { dispatchAppearanceChanged, syncComfortThemeClass } from "./lib/appearance";
 import {
+  cycleTerminalFontPreset,
   loadSidebarVisible,
   saveSidebarVisible,
+  toggleComfortTheme,
 } from "./lib/storage-keys";
 
 function isFocusInsideTerminalHost(): boolean {
@@ -185,6 +188,23 @@ function App() {
         id: "toggle-sidebar",
         label: "Toggle sidebar",
         run: toggleSidebar,
+      },
+      {
+        id: "cycle-terminal-font",
+        label: "Cycle terminal font (system → JetBrains → Fira)",
+        run: () => {
+          cycleTerminalFontPreset();
+          dispatchAppearanceChanged();
+        },
+      },
+      {
+        id: "toggle-comfort-theme",
+        label: "Toggle comfort theme (softer shell + terminal surface)",
+        run: () => {
+          toggleComfortTheme();
+          syncComfortThemeClass();
+          dispatchAppearanceChanged();
+        },
       },
       {
         id: "restart-session",

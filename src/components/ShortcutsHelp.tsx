@@ -4,7 +4,10 @@ interface ShortcutsHelpProps {
 }
 
 const ROWS: [string, string][] = [
-  ["Cmd+Shift+P", "Command palette (not from inside terminal)"],
+  [
+    "Cmd+Shift+P",
+    "Command palette (not from inside terminal) — includes font preset + comfort theme",
+  ],
   ["Cmd+B", "Toggle sidebar"],
   ["↑ / ↓", "Move focus in Files tree (when that panel is focused)"],
   ["Cmd+,", "Open personas.json"],

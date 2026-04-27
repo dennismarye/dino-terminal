@@ -1,6 +1,6 @@
 [package]
 name = "dino-terminal"
-version = "0.2.3"
+version = "0.2.4"
 description = "Dino Terminal — PTY-backed Claude Code wrapper"
 authors = ["Dino"]
 edition = "2021"

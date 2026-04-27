@@ -104,7 +104,7 @@ export function Sidebar({
   };
 
   const sectionTitle = (label: string) => (
-    <h2 className="mb-1 shrink-0 text-[10px] font-medium uppercase tracking-[0.1em] text-[var(--text-dim)]">
+    <h2 className="mb-1 shrink-0 text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--text-chrome)]">
       {label}
     </h2>
   );

@@ -7,15 +7,29 @@
   --bg-hover: #45475a;
   --text-primary: #cdd6f4;
   --text-secondary: #a6adc8;
-  --text-dim: #6c7086;
+  /* Brighter than legacy #6c7086 for readable chrome at 11–12px on bg-secondary */
+  --text-dim: #8689a4;
+  --text-chrome: #9396ab;
   --accent-cto: #ff6b35;
   --accent-general: #95a5a6;
   --accent-green: #a6e3a1;
   --accent-yellow: #f9e2af;
   --accent-red: #f38ba8;
   --accent-blue: #89b4fa;
-  --border: #313244;
+  --border: #2a2a3c;
   --border-active: #ff6b35;
+}
+
+/* Softer contrast for long sessions; toggled via localStorage + palette */
+html.dino-comfort {
+  --bg-primary: #242438;
+  --bg-secondary: #1e1e2e;
+  --text-primary: #dce0f0;
+  --text-secondary: #b8bdd4;
+  --text-dim: #9498b0;
+  --text-chrome: #a0a4bc;
+  --border: #34344a;
+  --accent-cto: #e8956c;
 }
 
 html,
@@ -26,9 +40,13 @@ body,
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family:
-    Inter,
+    system-ui,
     -apple-system,
     BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
     sans-serif;
 }
 
@@ -48,6 +66,21 @@ body,
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --text-dim: #a4a8be;
+    --text-chrome: #b0b4c8;
+    --border: #45475a;
+    --text-primary: #e8eaf7;
+    --text-secondary: #c8ccde;
+  }
+
+  html.dino-comfort {
+    --text-dim: #aeb2c8;
+    --border: #4d4f69;
   }
 }
 

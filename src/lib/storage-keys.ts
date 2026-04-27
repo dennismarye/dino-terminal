@@ -28,13 +28,75 @@ export function saveViewMode(personaId: string, mode: AgentViewMode): void {
 }
 
 export const STORAGE_FONT_SIZE = "dino-terminal-font-size";
+export const STORAGE_TERMINAL_FONT_PRESET = "dino-terminal-font-preset";
+export const STORAGE_COMFORT_THEME = "dino-terminal-comfort-theme";
 export const STORAGE_WEBGL = "dino-terminal-terminal-webgl";
 export const STORAGE_SIDEBAR_VISIBLE = "dino-terminal-sidebar-visible";
 export const STORAGE_SIDEBAR_SECTIONS = "dino-terminal-sidebar-sections";
 
 export const MIN_FONT = 10;
 export const MAX_FONT = 22;
-export const DEFAULT_FONT = 13;
+export const DEFAULT_FONT = 14;
+
+const TERMINAL_FONT_PRESETS = ["system-mono", "jetbrains", "fira"] as const;
+
+export type TerminalFontPreset = (typeof TERMINAL_FONT_PRESETS)[number];
+
+function isTerminalFontPreset(v: string): v is TerminalFontPreset {
+  return (TERMINAL_FONT_PRESETS as readonly string[]).includes(v);
+}
+
+export function loadTerminalFontPreset(): TerminalFontPreset {
+  try {
+    const v = globalThis.localStorage.getItem(STORAGE_TERMINAL_FONT_PRESET);
+    if (v && isTerminalFontPreset(v)) {
+      return v;
+    }
+  } catch {
+    /* ignore */
+  }
+  return "system-mono";
+}
+
+export function saveTerminalFontPreset(p: TerminalFontPreset): void {
+  try {
+    globalThis.localStorage.setItem(STORAGE_TERMINAL_FONT_PRESET, p);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Cycles system → JetBrains → Fira → system. Returns the new preset. */
+export function cycleTerminalFontPreset(): TerminalFontPreset {
+  const cur = loadTerminalFontPreset();
+  const idx = TERMINAL_FONT_PRESETS.indexOf(cur);
+  const next =
+    TERMINAL_FONT_PRESETS[(idx + 1) % TERMINAL_FONT_PRESETS.length] ?? "system-mono";
+  saveTerminalFontPreset(next);
+  return next;
+}
+
+export function loadComfortTheme(): boolean {
+  try {
+    return globalThis.localStorage.getItem(STORAGE_COMFORT_THEME) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function saveComfortTheme(enabled: boolean): void {
+  try {
+    globalThis.localStorage.setItem(STORAGE_COMFORT_THEME, enabled ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function toggleComfortTheme(): boolean {
+  const next = !loadComfortTheme();
+  saveComfortTheme(next);
+  return next;
+}
 
 export function loadFontSize(): number {
   try {

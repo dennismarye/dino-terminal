@@ -45,7 +45,7 @@ export function StatusBar({ status }: StatusBarProps) {
   const branch = status?.branch ?? "—";
 
   return (
-    <footer className="flex h-8 shrink-0 items-center justify-between border-t border-[var(--border)] px-4 font-mono text-[11px] text-[var(--text-secondary)]">
+    <footer className="flex min-h-9 shrink-0 items-center justify-between border-t border-[var(--border)] px-4 py-1 font-mono text-[12px] leading-snug text-[var(--text-secondary)]">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className={ctxClass(ctx)}>Ctx: {fmt(ctx)}</span>
         <span className="text-[var(--text-dim)]">│</span>
