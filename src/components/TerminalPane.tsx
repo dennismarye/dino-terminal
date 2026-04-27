@@ -9,6 +9,7 @@ import {
   saveViewMode,
   type AgentViewMode,
 } from "../lib/storage-keys";
+import { AgentViewModeSwitch } from "./AgentViewModeSwitch";
 import { RichAgentPane } from "./RichAgentPane";
 
 interface TerminalPaneProps {
@@ -104,18 +105,14 @@ function ClassicTerminalPaneInner({
             Terminal — {persona.name}
           </span>
           <span className="text-[11px] text-[var(--text-dim)]">
-            Cmd+F find · Cmd± font · click http(s) links to open in browser
+            PTY · Cmd+F find · Cmd± font · links open in browser
           </span>
         </div>
-        <button
-          type="button"
-          className="shrink-0 rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
-          onClick={() => {
-            onSwitchToRich();
-          }}
-        >
-          Rich agent
-        </button>
+        <AgentViewModeSwitch
+          mode="classic"
+          onSelectClassic={() => {}}
+          onSelectRich={onSwitchToRich}
+        />
       </div>
       {findOpen ? (
         <div className="flex shrink-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-secondary)] px-2 py-1">
