@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useClaudeStreamSession } from "../hooks/useClaudeStreamSession";
 import type { Persona } from "../lib/personas";
+import { AgentViewModeSwitch } from "./AgentViewModeSwitch";
 import { AgentFeed } from "./AgentFeed";
 import { PermissionPolicyBar } from "./PermissionPolicyBar";
 import { RichAgentDock } from "./RichAgentDock";
@@ -67,17 +68,22 @@ export function RichAgentPane({
       style={{ display: isActive ? "flex" : "none" }}
       aria-hidden={!isActive}
     >
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--bg-secondary)] px-3 py-1.5">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--bg-secondary)] px-3 py-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="rounded-md border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-1 text-[11px] text-[var(--text-dim)]">
             Session: <strong className="text-[var(--text-primary)]">{persona.name}</strong>
           </span>
-          <span className="text-[10px] text-[var(--text-dim)]">Rich · stream-json</span>
+          <span className="text-[11px] text-[var(--text-dim)]">stream-json feed</span>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <AgentViewModeSwitch
+            mode="rich"
+            onSelectClassic={onSwitchToClassic}
+            onSelectRich={() => {}}
+          />
           <button
             type="button"
-            className="rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
+            className="rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
             onClick={() => {
               clearTimeline();
             }}
@@ -86,17 +92,8 @@ export function RichAgentPane({
           </button>
           <button
             type="button"
-            className="rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
-            onClick={() => {
-              onSwitchToClassic();
-            }}
-          >
-            Classic terminal
-          </button>
-          <button
-            type="button"
             disabled={!busy}
-            className="rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-40 focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
+            className="rounded border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-40 focus-visible:ring-1 focus-visible:ring-[var(--accent-blue)]"
             onClick={() => {
               void stop();
             }}

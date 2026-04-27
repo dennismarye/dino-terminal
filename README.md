@@ -10,6 +10,7 @@
 |------|--------|
 | **Terminal** | Full **xterm.js** session backed by a **pseudo-terminal** on your machine. Claude Code runs here with your normal shell environment (after `npx` resolution). |
 | **Rich agent** | Optional **mock-style feed** (centered column, tool cards, coalesced assistant text, **Finished in …** footer, dock with model + token meter when `result.usage` exists). Same transport as Classic: **`npx` + `cmdArgs`**, **`-p`**, **`--output-format stream-json`**. Tool **`content_block_*`** lines require persona **`streamVerbose`**. Policy chips from **`permissionMode` / `allowedTools`**. See `docs/rich-agent-stream-json.md` and `docs/stream-json-tool-events.md`. |
+| **Classic / Rich** | The agent header includes a **Classic \| Rich** control so you can switch between the **PTY + xterm** view and the **stream-json** feed from either side (symmetric; no one-way “open rich only” affordance). |
 | **Sessions (personas)** | Switch between **named profiles** (for example one profile per repo or role). Each profile has its own **working directory**, **CLI arguments** (extra `--add-dir` roots, flags), **file-tree roots**, and **task file**—so one app can represent different projects without retyping paths. |
 | **Files** | Browse allowed directories (by default under **`$HOME`**) and **open files** in **tabbed preview** panes (markdown and text). Useful for skimming specs or handovers next to the agent. |
 | **Tasks** | Watches the **tasks JSON** (`taskFile`); shows up to **10** rows plus **`+N more`** if the list is longer. Statuses **`blocked`** and **`parked`** (exact strings) and common **in-progress / completed / pending** values get distinct markers (see **How to use** → Tasks panel). |
@@ -253,7 +254,7 @@ The command palette (**Cmd+Shift+P**) also includes **Cycle terminal font** (sys
 ### Appearance (typography and comfort)
 
 - **Shell UI** uses a **system UI sans-serif** stack (no bundled Inter) for sidebars, tabs, and chrome.
-- **Classic terminal** defaults to **system monospace** (`ui-monospace`, SF Mono, Menlo, …). **JetBrains Mono** / **Fira Code** apply when you pick those presets in the palette and the font is installed on the system.
+- **Classic** (PTY + xterm) defaults to **system monospace** (`ui-monospace`, SF Mono, Menlo, …). **JetBrains Mono** / **Fira Code** apply when you pick those presets in the palette and the font is installed on the system.
 - **Comfort theme** (palette) applies **`html.dino-comfort`** CSS variables and a slightly softer xterm background/foreground for long sessions.
 - When the OS sets **prefers-contrast: more**, the app increases contrast on dim text and borders.
 
